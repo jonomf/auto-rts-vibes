@@ -1236,3 +1236,40 @@ em {
   white-space: normal;
   text-align: center;
 }
+
+/* ---- Narrow screens -------------------------------------------------------- */
+
+:root {
+  color-scheme: dark;
+}
+
+@media (max-width: 760px) {
+  .stockpiles {
+    display: none;
+  }
+  .prog {
+    width: 100%;
+    bottom: 46vh;
+  }
+  #app.prog-open .banner,
+  #app.prog-open .toast {
+    left: 50%;
+    max-width: calc(100% - 24px);
+  }
+  .topbar .right .seg.speed button:nth-child(n + 2):nth-child(-n + 3) {
+    display: none;
+  }
+  .panel {
+    height: auto;
+    max-height: 46vh;
+    flex-direction: column;
+    overflow: auto;
+    gap: 8px;
+  }
+  .card {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .toast {
+    bottom: 50vh;
+  }
+}

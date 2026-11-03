@@ -6,6 +6,8 @@ This repo is the web-native port of the Unity prototype in `docs/rts`, with no e
 **Status: M2, automation.** By default you have no direct control. Your gatherers stand idle until you write a rule like
 *always → gather minerals → Home*. The goal is to clear the target field as fast as your program can. See [`.plan`](.plan).
 
+**Play it:** https://jonomf.github.io/auto-rts-vibes/ (built and deployed by GitHub Actions on every push to `main`).
+
 ## Run it
 
 ```sh
