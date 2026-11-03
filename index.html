@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auto RTS</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect x=%223%22 y=%223%22 width=%2210%22 height=%2210%22 transform=%22rotate(45 8 8)%22 fill=%22none%22 stroke=%22%239dffb8%22 stroke-width=%222%22/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/src/ui/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="view"></canvas>
+
+      <header class="topbar">
+        <div class="brand"><span class="mark"></span>AUTO&#8209;RTS <span class="ver">M1 sandbox</span></div>
+        <div class="clock" data-clock>0:00</div>
+        <div class="right">
+          <div class="speed" data-speed></div>
+          <button class="help-btn" data-help-toggle title="Controls (?)">?</button>
+        </div>
+      </header>
+
+      <aside class="stockpiles" data-stock></aside>
+
+      <div class="banner" data-banner></div>
+      <div class="toast" data-toast></div>
+
+      <footer class="panel">
+        <section class="info" data-info></section>
+        <section class="card" data-card></section>
+      </footer>
+
+      <div class="help" data-help>
+        <div class="sheet">
+          <div class="sheet-head"><h2>Controls</h2><button data-help-close>✕</button></div>
+          <div class="cols">
+            <dl>
+              <dt>Left-click</dt><dd>Select · <kbd>Shift</kbd> add/remove</dd>
+              <dt>Drag</dt><dd>Box-select units</dd>
+              <dt>Double-click</dt><dd>Select all of that type on screen</dd>
+              <dt>Right-click</dt><dd>Gather, deliver, attack, move · on buildings: set rally</dd>
+              <dt>Wheel / middle-drag / arrows</dt><dd>Zoom / pan</dd>
+              <dt><kbd>H</kbd></dt><dd>Jump to Home</dd>
+            </dl>
+            <dl>
+              <dt><kbd>M</kbd> <kbd>S</kbd> <kbd>A</kbd></dt><dd>Move · Stop · Attack (ground = attack-move)</dd>
+              <dt><kbd>B</kbd> then <kbd>Q</kbd>…<kbd>R</kbd></dt><dd>Build menu (gatherers)</dd>
+              <dt><kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd></dt><dd>Train (buildings)</dd>
+              <dt><kbd>Space</kbd> · <kbd>−</kbd> <kbd>+</kbd></dt><dd>Pause · slower / faster</dd>
+              <dt><kbd>Esc</kbd></dt><dd>Cancel / back</dd>
+            </dl>
+          </div>
+          <h3>How the economy works</h3>
+          <ul>
+            <li>There is no global bank. Every building keeps its <em>own</em> stockpile, and trains only from it.</li>
+            <li>Gatherers deliver to the nearest Home by default. Right-click another building with them to feed it instead.</li>
+            <li>Blueprints are built by delivery: the builder places it, then gatherers haul its cost to it. It grows as it fills.</li>
+            <li>Tech: Infantry Training → Mech Factory (needs gas) → Port.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

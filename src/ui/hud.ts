@@ -1,0 +1,296 @@
+import { DEFS, MAX_QUEUE, costOf, type DefId } from '../sim/defs';
+import { constructionProgress, isBuilding, isGatherer, isResource } from '../sim/actions';
+import { ENEMY, PLAYER, type Entity } from '../sim/types';
+import type { Game } from '../game';
+import { SPEEDS } from '../game';
+import { computeActions, ownControllable, type UiAction } from './actions';
+import { icon } from './icons';
+
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+
+/**
+ * DOM overlay: top bar (clock, time controls), stockpile list, selection panel,
+ * command card, mode banner, toasts. Replaces the Unity HUD prefab.
+ */
+export class Hud {
+  private actions: UiAction[] = [];
+  private cache = new Map<HTMLElement, string>();
+  private readonly el: {
+    clock: HTMLElement;
+    speed: HTMLElement;
+    stock: HTMLElement;
+    info: HTMLElement;
+    card: HTMLElement;
+    banner: HTMLElement;
+    toast: HTMLElement;
+    help: HTMLElement;
+  };
+
+  constructor(root: HTMLElement, private readonly game: Game) {
+    const q = (sel: string) => root.querySelector<HTMLElement>(sel)!;
+    this.el = {
+      clock: q('[data-clock]'),
+      speed: q('[data-speed]'),
+      stock: q('[data-stock]'),
+      info: q('[data-info]'),
+      card: q('[data-card]'),
+      banner: q('[data-banner]'),
+      toast: q('[data-toast]'),
+      help: q('[data-help]'),
+    };
+
+    this.el.card.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
+      if (!btn) return;
+      const action = this.actions.find((a) => a.id === btn.dataset.action);
+      if (!action) return;
+      if (action.disabled) game.notify(action.disabled);
+      else action.run();
+    });
+
+    this.el.info.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      const cancel = t.closest<HTMLElement>('[data-cancel]');
+      if (cancel) {
+        const [id, index] = cancel.dataset.cancel!.split(':').map(Number);
+        game.issue({ type: 'cancelTrain', buildingId: id, index });
+        return;
+      }
+      const pick = t.closest<HTMLElement>('[data-pick]');
+      if (pick) game.select(game.selected().filter((s) => s.def === pick.dataset.pick).map((s) => s.id));
+    });
+
+    this.el.speed.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('button');
+      if (!btn) return;
+      if (btn.dataset.pause !== undefined) game.togglePause();
+      else if (btn.dataset.rate) game.setSpeed(Number(btn.dataset.rate));
+    });
+
+    this.el.stock.addEventListener('click', (e) => {
+      const row = (e.target as HTMLElement).closest<HTMLElement>('[data-goto]');
+      if (!row) return;
+      const b = game.world.get(Number(row.dataset.goto));
+      if (!b) return;
+      game.select([b.id]);
+      game.camera.x = b.x;
+      game.camera.y = b.y;
+    });
+
+    root.querySelector('[data-help-toggle]')!.addEventListener('click', () => this.el.help.classList.toggle('open'));
+    this.el.help.addEventListener('click', (e) => {
+      if (e.target === this.el.help || (e.target as HTMLElement).closest('[data-help-close]'))
+        this.el.help.classList.remove('open');
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '?' || e.key === 'F1') {
+        e.preventDefault();
+        this.el.help.classList.toggle('open');
+      }
+    });
+  }
+
+  update(): void {
+    const g = this.game;
+    this.actions = computeActions(g);
+    this.set(this.el.clock, clock(g.world.seconds));
+    this.set(this.el.speed, this.speedHtml());
+    this.set(this.el.stock, this.stockHtml());
+    this.set(this.el.info, this.infoHtml());
+    this.set(this.el.card, this.cardHtml());
+    this.set(this.el.banner, this.bannerHtml());
+    const toast = g.toast && g.time < g.toast.until ? g.toast.text : '';
+    this.set(this.el.toast, toast ? esc(toast) : '');
+    this.el.toast.classList.toggle('show', !!toast);
+    this.el.banner.classList.toggle('show', g.mode.type !== 'normal' || g.paused);
+  }
+
+  private set(el: HTMLElement, html: string): void {
+    if (this.cache.get(el) === html) return;
+    this.cache.set(el, html);
+    el.innerHTML = html;
+  }
+
+  // ---- Top bar --------------------------------------------------------------------
+
+  private speedHtml(): string {
+    const g = this.game;
+    const pause = `<button data-pause class="${g.paused ? 'on' : ''}" title="Pause (Space)">${g.paused ? '▶' : '❚❚'}</button>`;
+    const rates = SPEEDS.map(
+      (s) =>
+        `<button data-rate="${s}" class="${!g.paused && g.speed === s ? 'on' : ''}" title="Speed (− / +)">${s}×</button>`,
+    ).join('');
+    return pause + rates;
+  }
+
+  /** Every building's own stockpile -- there is no global bank. */
+  private stockHtml(): string {
+    const g = this.game;
+    const own = g.world.list((e) => ownControllable(e) && isBuilding(e));
+    const rows = own.map((b) => {
+      const sel = g.selection.has(b.id) ? ' sel' : '';
+      const name = DEFS[b.def].name;
+      if (!b.complete) {
+        const pct = Math.round(constructionProgress(b) * 100);
+        return `<button class="row blueprint${sel}" data-goto="${b.id}">${icon(b.def)}<span class="name">${esc(name)}</span><span class="bar"><i style="width:${pct}%"></i></span><span class="num">${pct}%</span></button>`;
+      }
+      const q = b.queue.length ? `<span class="q">${b.queue.length}▸</span>` : '';
+      return `<button class="row${sel}" data-goto="${b.id}">${icon(b.def)}<span class="name">${esc(name)}</span>${q}<span class="num m">${b.stock.minerals}</span><span class="num g">${b.stock.gas}</span></button>`;
+    });
+    const gatherers = g.world.list((e) => e.team === PLAYER && isGatherer(e));
+    const idle = gatherers.filter((e) => e.order.type === 'idle').length;
+    const army = g.world.list((e) => ownControllable(e) && !!DEFS[e.def].attack).length;
+    return `<div class="head"><span>Stockpiles</span><span class="legend"><b class="m">min</b><b class="g">gas</b></span></div>${rows.join('')}
+      <div class="foot"><span>${gatherers.length} gatherers${idle ? ` · <em>${idle} idle</em>` : ''}</span><span>${army} army</span></div>`;
+  }
+
+  // ---- Selection panel -----------------------------------------------------------------
+
+  private infoHtml(): string {
+    const sel = this.game.selected();
+    if (sel.length === 0) return this.emptyInfo();
+    if (sel.length === 1) return this.singleInfo(sel[0]);
+    const groups = new Map<DefId, Entity[]>();
+    for (const e of sel) groups.set(e.def, [...(groups.get(e.def) ?? []), e]);
+    const tiles = [...groups].map(
+      ([def, list]) =>
+        `<button class="tile" data-pick="${def}" title="Select only ${esc(DEFS[def].name)}">${icon(def)}<span>${list.length}× ${esc(DEFS[def].name)}</span></button>`,
+    );
+    return `<div class="title">${sel.length} selected</div><div class="tiles">${tiles.join('')}</div>`;
+  }
+
+  private emptyInfo(): string {
+    return `<div class="title muted">Nothing selected</div>
+      <ul class="hints">
+        <li><kbd>Drag</kbd> to box-select your gatherers, <kbd>Right-click</kbd> minerals or gas to gather</li>
+        <li>Gatherers deliver to the nearest Home, or <kbd>Right-click</kbd> any building to feed its stockpile instead</li>
+        <li><kbd>B</kbd> to build: blueprints are paid for by delivering resources to them</li>
+        <li>Each building trains from its <em>own</em> stockpile · <kbd>?</kbd> for all controls</li>
+      </ul>`;
+  }
+
+  private singleInfo(e: Entity): string {
+    const g = this.game;
+    const d = DEFS[e.def];
+    const owner = d.inert ? 'Target dummy' : e.team === PLAYER ? 'Yours' : e.team === ENEMY ? 'Enemy' : 'Resource';
+    let html = `<div class="title">${icon(e.def)}<span>${esc(d.name)}</span><span class="tag">${owner}</span></div>`;
+
+    if (isResource(e)) {
+      const full = d.resource!.amount;
+      html += meter('Remaining', e.remaining, full, d.resource!.type === 'minerals' ? 'm' : 'g');
+      html += `<div class="line muted">${d.resource!.pieceSize} per trip</div>`;
+      return html;
+    }
+
+    html += meter('HP', Math.ceil(e.hp), d.hp, 'hp');
+
+    if (isBuilding(e)) {
+      if (!e.complete) {
+        const c = costOf(e.def);
+        html += `<div class="line">Blueprint · gatherers deliver resources here to build it</div>`;
+        if (c.minerals) html += meter('Minerals', c.minerals + Math.min(0, e.stock.minerals), c.minerals, 'm');
+        if (c.gas) html += meter('Gas', c.gas + Math.min(0, e.stock.gas), c.gas, 'g');
+        const feeding = g.world.list((u) => u.team === e.team && u.depositId === e.id).length;
+        html += `<div class="line muted">${feeding} gatherer${feeding === 1 ? '' : 's'} delivering</div>`;
+        return html;
+      }
+      if (d.inert) return html;
+      html += `<div class="stockline"><span class="num m">${e.stock.minerals}</span> minerals <span class="num g">${e.stock.gas}</span> gas <span class="muted">in this building</span></div>`;
+      if (d.trains?.length) {
+        const slots: string[] = [];
+        for (let i = 0; i < MAX_QUEUE; i++) {
+          const item = e.queue[i];
+          if (!item) {
+            slots.push('<span class="slot empty"></span>');
+            continue;
+          }
+          const t = i === 0 ? item.elapsed / (DEFS[item.def].buildTime ?? 1) : 0;
+          slots.push(
+            `<button class="slot" data-cancel="${e.id}:${i}" title="Cancel ${esc(DEFS[item.def].name)} (refund)">${icon(item.def)}<i style="width:${Math.round(t * 100)}%"></i></button>`,
+          );
+        }
+        html += `<div class="queue">${slots.join('')}</div>`;
+        html += `<div class="line muted">${e.rally ? 'Rally set · ' : ''}Right-click to set rally point</div>`;
+      }
+      return html;
+    }
+
+    // Units.
+    html += `<div class="line">${esc(orderText(g, e))}</div>`;
+    if (isGatherer(e)) {
+      const dep = g.world.get(e.depositId);
+      const cargo = e.cargo ? `Carrying ${e.cargo.amount} ${e.cargo.type}` : 'Empty-handed';
+      html += `<div class="line muted">${cargo}${dep ? ` · delivers to ${esc(DEFS[dep.def].name)}` : ''}</div>`;
+    }
+    if (d.attack) {
+      const a = d.attack;
+      const targets = a.hitsAir && a.hitsGround ? 'ground + air' : a.hitsAir ? 'air' : 'ground';
+      html += `<div class="line muted">${a.damage} dmg · range ${a.range} · ${a.cooldown}s · ${targets}${d.flying ? ' · flying' : ''}</div>`;
+    }
+    return html;
+  }
+
+  // ---- Command card ---------------------------------------------------------------
+
+  private cardHtml(): string {
+    if (this.actions.length === 0) return '';
+    return this.actions
+      .map(
+        (a) => `<button class="cmd${a.disabled ? ' off' : ''}${a.active ? ' active' : ''}" data-action="${a.id}" title="${esc(a.disabled ?? a.tooltip ?? a.label)}">
+          ${a.hotkey ? `<kbd>${esc(a.hotkey)}</kbd>` : ''}${icon(a.icon)}<span class="lbl">${esc(a.label)}</span>${a.detail ? `<span class="detail">${esc(a.detail)}</span>` : ''}
+        </button>`,
+      )
+      .join('');
+  }
+
+  private bannerHtml(): string {
+    const g = this.game;
+    const m = g.mode;
+    if (m.type === 'place')
+      return `Place <b>${esc(DEFS[m.def].name)}</b> · click to place · <kbd>Shift</kbd> to place several · right-click to cancel`;
+    if (m.type === 'move') return 'Move · click a point or a target · right-click to cancel';
+    if (m.type === 'attack') return 'Attack · click an enemy, or ground to attack-move · right-click to cancel';
+    if (g.paused) return 'Paused · <kbd>Space</kbd> to resume';
+    return '';
+  }
+}
+
+function meter(label: string, value: number, max: number, kind: 'm' | 'g' | 'hp'): string {
+  const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
+  return `<div class="meter ${kind}"><span class="k">${label}</span><span class="bar"><i style="width:${pct}%"></i></span><span class="num">${value}/${max}</span></div>`;
+}
+
+function clock(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function orderText(g: Game, e: Entity): string {
+  const o = e.order;
+  const name = (id: number | null) => {
+    const t = g.world.get(id);
+    return t ? DEFS[t.def].name : '?';
+  };
+  switch (o.type) {
+    case 'idle':
+      return 'Idle';
+    case 'move':
+      return 'Moving';
+    case 'follow':
+      return `Moving to ${name(o.targetId)}`;
+    case 'attack':
+      return `Attacking ${name(o.targetId)}`;
+    case 'attackMove':
+      return o.engagedId != null && g.world.get(o.engagedId) ? `Engaging ${name(o.engagedId)}` : 'Attack-moving';
+    case 'build':
+      return `Going to build ${DEFS[o.def].name}`;
+    case 'gather': {
+      const src = g.world.get(e.sourceId);
+      const type = src ? DEFS[src.def].resource!.type : 'resources';
+      if (o.phase === 'toSource') return `Heading to ${type}`;
+      if (o.phase === 'harvesting') return `Harvesting ${type}`;
+      return `Delivering to ${name(e.depositId)}`;
+    }
+  }
+}

@@ -1,0 +1,25 @@
+- [x] M0: parity with the Unity prototype
+	- [x] gather → deliver loop, mineral + gas, per-building stockpiles
+	- [x] construction by delivery (blueprint grows as resources arrive)
+	- [x] buildings train units from their own stock; RMB move (loop bug fixed)
+- [x] M1: MVP unit building basics: Infantry / Mech / Port, direct movement, no pathfinding
+	- [x] Infantry Training → Light + Heavy Infantry; Mech Factory → Tank; Port → Ship (flying)
+	- [x] tech chain, training queues (5, cancel = refund), rally points
+	- [x] minimal combat: hp, range, cooldown, attack, attack-move, idle auto-acquire, air/ground
+	- [x] separation so units don't stack; static target dummies
+	- [x] fixed-tick deterministic sim; pause + 0.25×–4×
+- [ ] M2: automation
+	- [ ] programs as data: trigger / condition / action blocks (JSON AST) + interpreter that issues Commands
+	- [ ] scopes: per unit type, per building, whole base
+	- [ ] build orders (ordered list) + base layout templates (slots relative to Home)
+	- [ ] posture if/else: economy / defense / offense
+	- [ ] block editor UI ("always: collect mineral, bring to base")
+	- [ ] queue commands while paused
+- [ ] M3: CCG budget (mana = node count), scripted enemy using the same program format, save/share programs
+
+Open design questions
+- Home's stockpile piles up but can't fund blueprints (only fresh deliveries can). Keep it, or add a transfer / "haul from building" action? This fits naturally as an M2 automation verb.
+- Building collision: units currently walk straight through buildings.
+
+---
+Unity prototype: docs/rts · notes: [[Auto-Starcraft]] (jono-obs)
