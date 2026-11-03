@@ -8,18 +8,28 @@
 	- [x] minimal combat: hp, range, cooldown, attack, attack-move, idle auto-acquire, air/ground
 	- [x] separation so units don't stack; static target dummies
 	- [x] fixed-tick deterministic sim; pause + 0.25×–4×
-- [ ] M2: automation
-	- [ ] programs as data: trigger / condition / action blocks (JSON AST) + interpreter that issues Commands
-	- [ ] scopes: per unit type, per building, whole base
-	- [ ] build orders (ordered list) + base layout templates (slots relative to Home)
-	- [ ] posture if/else: economy / defense / offense
-	- [ ] block editor UI ("always: collect mineral, bring to base")
-	- [ ] queue commands while paused
-- [ ] M3: CCG budget (mana = node count), scripted enemy using the same program format, save/share programs
+- [x] M2: automation
+	- [x] programs as data (JSON): conditions / actions / build-order steps + interpreter that issues Commands
+	- [x] gambit semantics: first matching rule wins, higher rules interrupt, "max N" caps, fall-through when an action is impossible
+	- [x] scopes: per unit type (+ shared Army list), per building type, Base
+	- [x] build order (ordered steps with live status) + base layout slots edited on the map + muster point
+	- [x] posture (economy / defense / offense): set by rules, build order or top bar; read by conditions
+	- [x] haul verb: crates between stockpiles; "needs" = blueprint debt or production reserve, net of loads in flight
+	- [x] block editor: rules as sentences of clickable word-chips; live "● N following" counts; selected unit's rule highlighted
+	- [x] hands-off mode (default): no direct control; hands-on: player orders win until finished
+	- [x] objective: destroy all targets, timed; best time; restart with current program
+	- [x] starter program (wins in ~2:00 with no input); JSON copy/paste; program saved in the browser
+	- [x] commands while paused: any order or program edit made while paused applies on resume
+- [ ] M3
+	- [ ] CCG budget: cap program size ("mana" = blocks, already counted in the editor header)
+	- [ ] scripted enemy that runs the same program format (an opponent that builds and attacks)
+	- [ ] cards: rules as cards in a deck; can one card's output feed another's input?
+	- [ ] save / share programs by link
 
 Open design questions
-- Home's stockpile piles up but can't fund blueprints (only fresh deliveries can). Keep it, or add a transfer / "haul from building" action? This fits naturally as an M2 automation verb.
-- Building collision: units currently walk straight through buildings.
+- Building collision: units still walk straight through buildings (no pathfinding by design so far).
+- Drag-and-drop reordering for rules (currently ↑/↓ buttons).
+- Should "needs" reserves (2× priciest unit) be a per-building setting?
 
 ---
 Unity prototype: docs/rts · notes: [[Auto-Starcraft]] (jono-obs)

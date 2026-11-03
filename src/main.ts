@@ -1,22 +1,23 @@
-import { createSandbox } from './sim/scenario';
 import { Game } from './game';
 import { Renderer } from './render/renderer';
 import { Input } from './input/input';
 import { Hud } from './ui/hud';
+import { Editor } from './ui/editor';
 
 const root = document.getElementById('app')!;
 const canvas = document.getElementById('view') as HTMLCanvasElement;
 
-const world = createSandbox();
-const game = new Game(world);
+const game = new Game();
 const renderer = new Renderer(canvas, game);
 const input = new Input(canvas, game);
 const hud = new Hud(root, game);
+const editor = new Editor(root, game);
 
-// Start centered between the base and the mineral line.
-const home = world.list((e) => e.def === 'home')[0];
-game.camera.x = home.x + 6;
+// Start framed on the main base and its build area.
+const home = game.world.list((e) => e.def === 'home')[0];
+game.camera.x = home.x + 9;
 game.camera.y = home.y;
+game.camera.zoom = 22;
 
 const resize = () => renderer.resize();
 window.addEventListener('resize', resize);
@@ -38,10 +39,11 @@ function frame(now: number): void {
     hudTimer = 0;
     hudVersion = game.uiVersion;
     hud.update();
+    editor.update();
   }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 
 // Handy for poking at the sim from the console.
-Object.assign(window, { game, world });
+Object.assign(window, { game });

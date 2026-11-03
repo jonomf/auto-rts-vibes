@@ -21,7 +21,9 @@ export type Order =
   | { type: 'attack'; targetId: EntityId }
   | { type: 'attackMove'; x: number; y: number; engagedId: EntityId | null }
   | { type: 'gather'; phase: 'toSource' | 'harvesting' | 'toDeposit'; timer: number }
-  | { type: 'build'; def: DefId; x: number; y: number };
+  | { type: 'build'; def: DefId; x: number; y: number }
+  /** Carry one load of `res` from one building's stockpile to another's (single trip). */
+  | { type: 'haul'; res: ResourceType; fromId: EntityId; toId: EntityId; phase: 'toFrom' | 'toTo' };
 
 export type Rally = { kind: 'point'; x: number; y: number } | { kind: 'entity'; id: EntityId };
 
@@ -69,7 +71,15 @@ export type Entity = {
 
   // Combat --------------------------------------------------------------------
   cooldown: number;
+
+  // Automation ----------------------------------------------------------------
+  /** Rule key this unit is following (see automation/types.ts ruleKey), or null. */
+  intent: string | null;
+  /** Last order came from the player; automation leaves the unit alone until it goes idle. */
+  manual: boolean;
 };
+
+export type CommandSource = 'player' | 'auto';
 
 export type Command =
   | { type: 'move'; ids: EntityId[]; x: number; y: number }
@@ -77,6 +87,7 @@ export type Command =
   /** Contextual right-click on an entity: gather, deposit, attack or follow. */
   | { type: 'target'; ids: EntityId[]; targetId: EntityId }
   | { type: 'stop'; ids: EntityId[] }
+  | { type: 'haul'; ids: EntityId[]; res: ResourceType; fromId: EntityId; toId: EntityId }
   | { type: 'build'; builderId: EntityId; def: DefId; x: number; y: number }
   | { type: 'train'; buildingId: EntityId; def: DefId }
   | { type: 'cancelTrain'; buildingId: EntityId; index: number }

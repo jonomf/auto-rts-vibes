@@ -6,6 +6,7 @@ import { DEFS, costOf, formatCost, type DefId } from '../sim/defs';
 import { canAttack, checkTrain, isBuilding, isGatherer, isUnit, missingRequirement } from '../sim/actions';
 import { PLAYER, type Entity } from '../sim/types';
 import type { Game } from '../game';
+import { scopeOfEntity } from './editor';
 
 export type UiAction = {
   id: string;
@@ -17,7 +18,7 @@ export type UiAction = {
   disabled?: string;
   tooltip?: string;
   active?: boolean;
-  icon: DefId | 'move' | 'stop' | 'attack' | 'build' | 'back';
+  icon: DefId | 'move' | 'stop' | 'attack' | 'build' | 'back' | 'program';
   run: () => void;
 };
 
@@ -30,6 +31,24 @@ export function computeActions(game: Game): UiAction[] {
   const sel = game.selected().filter(ownControllable);
   const units = sel.filter(isUnit);
   const buildings = sel.filter(isBuilding);
+
+  // Hands-off: no direct orders; the card offers the selection's rules instead.
+  if (game.handsOff) {
+    if (sel.length === 0) return [];
+    const scope = scopeOfEntity(sel[0].def);
+    const out: UiAction[] = [
+      {
+        id: 'rules',
+        label: scope === 'base' ? 'Base program' : `${DEFS[sel[0].def].name} rules`,
+        hotkey: 'E',
+        icon: 'program',
+        run: () => game.openScope(scope),
+      },
+    ];
+    if (units.some(canAttack))
+      out.push({ id: 'army', label: 'Army rules', hotkey: 'R', icon: 'attack', run: () => game.openScope('army') });
+    return out;
+  }
 
   if (units.length > 0) {
     const gatherers = units.filter(isGatherer);

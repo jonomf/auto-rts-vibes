@@ -4,6 +4,7 @@ import { TICK_RATE } from '../sim/world';
 import { ENEMY, PLAYER, type Entity } from '../sim/types';
 import type { Game } from '../game';
 import { snapToGrid } from '../input/input';
+import { anchorOf } from '../automation/layout';
 
 /**
  * Canvas 2D renderer. Draws in world units (the context is scaled by the camera zoom),
@@ -75,6 +76,7 @@ export class Renderer {
       (cam.height / 2 - cam.y * z) * this.dpr,
     );
     this.drawGrid();
+    this.drawLayout();
 
     const entities = world.list();
     const pos = (e: Entity) => ({ x: e.px + (e.x - e.px) * alpha, y: e.py + (e.y - e.py) * alpha });
@@ -641,9 +643,77 @@ export class Renderer {
     ctx.globalAlpha = 1;
   }
 
+  /** Program layout slots + muster point (when editing the base or the layout). */
+  private drawLayout(): void {
+    const { game, ctx } = this;
+    const show = game.mode.type === 'layout' || (game.programsOpen && game.scope === 'base');
+    if (!show) return;
+    const a = anchorOf(game.world, PLAYER);
+    if (!a) return;
+    const z = game.camera.zoom;
+    const lay = game.program.layout;
+    const editing = game.mode.type === 'layout';
+    const seen = new Map<DefId, number>();
+    ctx.font = `600 ${11 / z}px ui-monospace, Menlo, Consolas, monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const slot of lay.slots) {
+      const n = (seen.get(slot.def) ?? 0) + 1;
+      seen.set(slot.def, n);
+      const h = DEFS[slot.def].radius;
+      const x = a.x + slot.dx;
+      const y = a.y + slot.dy;
+      const taken = game.world.list((e) => e.def === slot.def && Math.abs(e.x - x) < 0.6 && Math.abs(e.y - y) < 0.6).length > 0;
+      ctx.globalAlpha = taken ? 0.25 : editing ? 0.85 : 0.55;
+      ctx.setLineDash([0.3, 0.22]);
+      ctx.strokeStyle = COLORS.rally;
+      ctx.lineWidth = 1.5 / z;
+      ctx.strokeRect(x - h, y - h, h * 2, h * 2);
+      ctx.setLineDash([]);
+      if (!taken) {
+        ctx.globalAlpha *= 0.5;
+        this.drawBuildingGlyph(slot.def, x, y, h, COLORS.rally, z);
+        ctx.globalAlpha = editing ? 0.9 : 0.6;
+        ctx.fillStyle = COLORS.rally;
+        ctx.fillText(`${SHORT[slot.def] ?? ''}${n}`, x, y + h - 0.35);
+      }
+    }
+    // Muster flag.
+    const m = { x: a.x + lay.muster.dx, y: a.y + lay.muster.dy };
+    ctx.globalAlpha = editing ? 1 : 0.75;
+    ctx.strokeStyle = COLORS.selectEnemy;
+    ctx.fillStyle = COLORS.selectEnemy;
+    ctx.lineWidth = 2 / z;
+    ctx.beginPath();
+    ctx.ellipse(m.x, m.y, 0.9, 0.6, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(m.x, m.y);
+    ctx.lineTo(m.x, m.y - 1.3);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(m.x, m.y - 1.3);
+    ctx.lineTo(m.x + 0.7, m.y - 1.05);
+    ctx.lineTo(m.x, m.y - 0.8);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
   private drawPlacementGhost(): void {
     const { game, ctx } = this;
     const mode = game.mode;
+    if (mode.type === 'layout' && mode.def !== 'muster' && game.hoverScreen.x >= 0) {
+      const z = game.camera.zoom;
+      const h = DEFS[mode.def].radius;
+      const { x, y } = snapToGrid(mode.def, game.hover.x, game.hover.y);
+      ctx.globalAlpha = 0.5;
+      ctx.strokeStyle = COLORS.rally;
+      ctx.lineWidth = 2 / z;
+      ctx.strokeRect(x - h, y - h, h * 2, h * 2);
+      this.drawBuildingGlyph(mode.def, x, y, h, COLORS.rally, z);
+      ctx.globalAlpha = 1;
+      return;
+    }
     if (mode.type !== 'place' || game.hoverScreen.x < 0) return;
     const z = game.camera.zoom;
     const h = DEFS[mode.def].radius;
@@ -713,6 +783,8 @@ export class Renderer {
     ctx.strokeRect(x + 0.5, y + 0.5, w, h);
   }
 }
+
+const SHORT: Partial<Record<DefId, string>> = { home: 'H', infantryTraining: 'IT', mechFactory: 'MF', port: 'P' };
 
 function circle(ctx: CanvasRenderingContext2D, x: number, y: number, r: number): void {
   ctx.beginPath();

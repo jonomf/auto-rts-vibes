@@ -4,7 +4,9 @@ import { applyCommand } from './commands';
 import { productionSystem } from './systems/production';
 import { unitSystem } from './systems/units';
 import { separationSystem } from './systems/separation';
-import type { Command, CommandResult, Effect, Entity, EntityId, Team } from './types';
+import type { Command, CommandResult, CommandSource, Effect, Entity, EntityId, Team } from './types';
+import type { AutoState, Program } from '../automation/types';
+import { AUTO_EVERY, automationSystem, createAutoState } from '../automation/interpreter';
 
 export const TICK_RATE = 20;
 export const DT = 1 / TICK_RATE;
@@ -25,6 +27,9 @@ export class World {
   effects: Effect[] = [];
   /** Every accepted command, with the tick it was applied on (replays, M2 debugging). */
   readonly commandLog: { tick: number; cmd: Command }[] = [];
+  /** The player's automation program (null = no automation at all). */
+  program: Program | null = null;
+  readonly auto: AutoState = createAutoState();
   private nextId = 1;
   private dead = new Set<EntityId>();
 
@@ -64,6 +69,8 @@ export class World {
       depositId: null,
       remaining: d.resource?.amount ?? 0,
       cooldown: 0,
+      intent: null,
+      manual: false,
       ...overrides,
     };
     this.entities.set(e.id, e);
@@ -135,9 +142,10 @@ export class World {
 
   // ---- Commands & ticking ----------------------------------------------------------
 
-  issue(cmd: Command): CommandResult {
-    const result = applyCommand(this, cmd);
-    if (result.ok) this.commandLog.push({ tick: this.tick, cmd });
+  /** Player commands are logged; automation commands are derived from the program and aren't. */
+  issue(cmd: Command, source: CommandSource = 'player'): CommandResult {
+    const result = applyCommand(this, cmd, source);
+    if (result.ok && source === 'player') this.commandLog.push({ tick: this.tick, cmd });
     return result;
   }
 
@@ -148,6 +156,7 @@ export class World {
     }
 
     productionSystem(this, DT);
+    if (this.program && this.tick % AUTO_EVERY === 0) automationSystem(this, this.program);
     unitSystem(this, DT);
     separationSystem(this);
 
@@ -167,10 +176,10 @@ export class World {
 
   /** Compact fingerprint of the state, for determinism tests. */
   hash(): string {
-    const parts: string[] = [String(this.tick)];
+    const parts: string[] = [String(this.tick), this.auto.posture, String(this.auto.step)];
     for (const e of this.all())
       parts.push(
-        `${e.id}:${e.def}:${e.x.toFixed(3)},${e.y.toFixed(3)}:${e.hp.toFixed(1)}:${e.stock.minerals},${e.stock.gas}:${e.order.type}`,
+        `${e.id}:${e.def}:${e.x.toFixed(3)},${e.y.toFixed(3)}:${e.hp.toFixed(1)}:${e.stock.minerals},${e.stock.gas}:${e.order.type}:${e.intent}`,
       );
     return parts.join('|');
   }

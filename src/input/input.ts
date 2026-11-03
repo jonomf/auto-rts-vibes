@@ -2,7 +2,9 @@
  * Mouse & keyboard -> selection changes and sim commands.
  * Unity chain was InputController -> Interaction -> Selection -> HUD; here it is one module.
  */
-import { DEFS, type DefId } from '../sim/defs';
+import { DEFS } from '../sim/defs';
+import { PLAYER } from '../sim/types';
+import { anchorOf, snapFootprint } from '../automation/layout';
 import { canAttack, isBuilding, isEnemyOf, isUnit } from '../sim/actions';
 import type { Game } from '../game';
 import { SPEEDS } from '../game';
@@ -12,11 +14,7 @@ const DRAG_THRESHOLD = 5;
 const PAN_SPEED = 900; // px/s
 const DOUBLE_CLICK_MS = 300;
 
-/** Snap a building center so its footprint edges land on the half-unit grid. */
-export function snapToGrid(def: DefId, x: number, y: number): { x: number; y: number } {
-  const h = DEFS[def].radius;
-  return { x: Math.round((x - h) * 2) / 2 + h, y: Math.round((y - h) * 2) / 2 + h };
-}
+export const snapToGrid = snapFootprint;
 
 export class Input {
   private keys = new Set<string>();
@@ -164,6 +162,10 @@ export class Input {
   /** Right-click: the contextual "do the obvious thing" command (Unity: Interaction.HandleInteract*). */
   private rightClick(): void {
     const g = this.game;
+    if (g.mode.type === 'layout') {
+      this.removeSlotAt(g.hover.x, g.hover.y);
+      return;
+    }
     if (g.mode.type !== 'normal') {
       g.cancelMode();
       return;
@@ -197,6 +199,22 @@ export class Input {
     const { x, y } = g.hover;
     const ids = g.selected().filter((e) => ownControllable(e) && isUnit(e)).map((e) => e.id);
 
+    if (mode.type === 'layout') {
+      const a = anchorOf(g.world, PLAYER);
+      if (!a) {
+        g.notify('Layout is relative to your Home, and there is none');
+        return;
+      }
+      const lay = g.program.layout;
+      if (mode.def === 'muster') lay.muster = { dx: Math.round((x - a.x) * 2) / 2, dy: Math.round((y - a.y) * 2) / 2 };
+      else {
+        const p = snapToGrid(mode.def, x, y);
+        lay.slots.push({ def: mode.def, dx: p.x - a.x, dy: p.y - a.y });
+      }
+      g.programChanged();
+      return;
+    }
+
     if (mode.type === 'place') {
       const p = snapToGrid(mode.def, x, y);
       const r = g.issue({ type: 'build', builderId: mode.builderId, def: mode.def, x: p.x, y: p.y });
@@ -226,6 +244,20 @@ export class Input {
     g.uiVersion++;
   }
 
+  private removeSlotAt(x: number, y: number): void {
+    const g = this.game;
+    const a = anchorOf(g.world, PLAYER);
+    if (!a) return;
+    const slots = g.program.layout.slots;
+    const i = slots.findIndex((s) => {
+      const h = DEFS[s.def].radius;
+      return Math.abs(a.x + s.dx - x) <= h && Math.abs(a.y + s.dy - y) <= h;
+    });
+    if (i < 0) return;
+    slots.splice(i, 1);
+    g.programChanged();
+  }
+
   // ---- Keyboard ------------------------------------------------------------------
 
   private onKey(e: KeyboardEvent): void {
@@ -251,6 +283,11 @@ export class Input {
       const i = SPEEDS.indexOf(g.speed as (typeof SPEEDS)[number]);
       const next = SPEEDS[Math.min(SPEEDS.length - 1, Math.max(0, i + (e.key === '-' ? -1 : 1)))];
       g.setSpeed(next);
+      return;
+    }
+    if (e.key === 'p' || e.key === 'P') {
+      g.programsOpen = !g.programsOpen;
+      g.uiVersion++;
       return;
     }
     if (e.key === 'h' || e.key === 'H') {

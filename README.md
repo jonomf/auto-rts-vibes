@@ -3,8 +3,8 @@
 Starcraft, but very macro. You program your economy and army instead of micro-managing them.
 This repo is the web-native port of the Unity prototype in `docs/rts`, with no engine and no runtime dependencies.
 
-**Status: M1, the playable sandbox.** You get one base, three unit families, straight-line movement, and a field of inert target dummies.
-M2 (automation blocks) is next; see [`.plan`](.plan).
+**Status: M2, automation.** By default you have no direct control. Your gatherers stand idle until you write a rule like
+*always → gather minerals → Home*. The goal is to clear the target field as fast as your program can. See [`.plan`](.plan).
 
 ## Run it
 
@@ -15,10 +15,29 @@ npm test           # simulation tests (Vitest)
 npm run build      # typecheck + production build into dist/
 ```
 
+## Programs
+
+Press `P` for the editor. Every rule is a sentence of word-chips; click a word to change it.
+
+- **Unit rules** (one list per unit type, plus a shared **Army** list for fighters): each unit follows the *first* rule
+  whose conditions hold and whose action is possible. A higher rule interrupts a lower one.
+  `max N` caps how many units may follow a rule (e.g. *max 3 → gather gas*).
+- **Building rules**: when the queue is empty, the first rule that holds *and can be paid for from this building's stock* trains.
+- **Base**: a build order (steps run top to bottom with a live status), base-wide rules (posture switches, extra buildings),
+  and the **layout**: building slots and a muster point placed on the map.
+- **Posture** (economy / defense / offense) is a base-wide variable rules can read and set.
+- **Haul** moves a crate (50 minerals / 25 gas) between stockpiles. *Something needs X* means a blueprint's unpaid cost or a
+  production building below its reserve (2× its priciest unit), net of loads already on the way.
+
+Programs are plain JSON (`src/automation/types.ts`). **Load starter** gives a complete program that wins in about 2:00.
+**JSON** copies or pastes one. The editor saves your program in the browser.
+
+**Hands-on** mode (top bar) restores the M1 mouse controls. Your orders win until the unit finishes them, then the program takes over again.
+
 ## How it plays
 
 - **Per-building stockpiles.** There is no global bank. Every building holds its own minerals and gas, and trains only from them.
-- **Gathering.** Right-click minerals or gas with gatherers. They deliver to the nearest Home. Right-click another building to feed that building's stockpile instead.
+- **Gathering.** In hands-on mode, right-click minerals or gas with gatherers. They deliver to the nearest Home. Right-click another building to feed that building's stockpile instead.
 - **Construction by delivery.** A gatherer places a blueprint (`B`). The blueprint is paid for by gatherers hauling resources to it, and it grows from 25% scale to full size as it fills. Nothing is deducted up front.
 - **Tech.** Home → Infantry Training (Light/Heavy Infantry) → Mech Factory (Tank, needs gas) → Port (Ship, flying).
 - **Combat.** Right-click to attack. `A` + click does attack-move. Idle units engage enemies in range.
@@ -37,16 +56,22 @@ src/
     commands.ts     the only way to change what entities do
     actions.ts      shared rules: placement, training checks, delivery, rally, damage
     systems/        production, units (orders, gathering, combat), separation
-    scenario.ts     the M1 sandbox map
+    scenario.ts     the sandbox map
+  automation/       the program language (pure, runs inside the sim)
+    types.ts        Program, Rule, Condition, Action, Step
+    blocks.ts       block schema: words, fields, options; sentences; JSON validation
+    interpreter.ts  4 Hz system: build order → base rules → buildings → units; issues Commands
+    layout.ts       layout slots, site search, muster / enemy destinations
+    presets.ts      the starter program
   game.ts           client state: selection, modes, camera, time controls
   render/           Canvas 2D renderer + camera
   input/            mouse/keyboard → selection + commands
-  ui/               HUD (DOM): stockpiles, selection panel, command card
-tests/sim.test.ts   gameplay rules as tests
+  ui/               HUD (DOM): stockpiles, selection panel, command card, program editor
+tests/              sim rules + automation (incl. "the starter program wins with zero player commands")
 ```
 
-**Key design rule:** player input and (in M2) automation programs both go through the same `World.issue(command)`.
-"No direct unit control" then just means turning the mouse's command source off.
+**Key design rule:** player input and automation both go through the same `World.issue(command)`.
+"No direct unit control" is just the client refusing the mouse's commands (hands-off mode).
 
 ## Ported from Unity
 

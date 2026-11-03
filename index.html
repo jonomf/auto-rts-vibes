@@ -12,15 +12,23 @@
       <canvas id="view"></canvas>
 
       <header class="topbar">
-        <div class="brand"><span class="mark"></span>AUTO&#8209;RTS <span class="ver">M1 sandbox</span></div>
-        <div class="clock" data-clock>0:00</div>
+        <div class="brand"><span class="mark"></span>AUTO&#8209;RTS</div>
+        <div class="center">
+          <div class="clock" data-clock>0:00</div>
+          <div class="objective" data-objective></div>
+        </div>
         <div class="right">
-          <div class="speed" data-speed></div>
+          <div class="seg posture" data-posture title="Base-wide posture (rules can read and set it)"></div>
+          <button class="pill" data-handsoff title="Hands-off: the program runs everything. Hands-on: you can also give orders (they win until finished)."></button>
+          <button class="pill" data-programs title="Open the program editor (P)">Program <kbd>P</kbd></button>
+          <button class="pill" data-restart title="Restart the match with the current program">Restart</button>
+          <div class="seg speed" data-speed></div>
           <button class="help-btn" data-help-toggle title="Controls (?)">?</button>
         </div>
       </header>
 
       <aside class="stockpiles" data-stock></aside>
+      <aside class="prog" data-prog></aside>
 
       <div class="banner" data-banner></div>
       <div class="toast" data-toast></div>
@@ -32,31 +40,35 @@
 
       <div class="help" data-help>
         <div class="sheet">
-          <div class="sheet-head"><h2>Controls</h2><button data-help-close>✕</button></div>
+          <div class="sheet-head"><h2>How to play</h2><button data-help-close>✕</button></div>
+          <h3>The idea</h3>
+          <ul>
+            <li>You don't command units. You write the <em>program</em> that does, then watch it run. Open it with <kbd>P</kbd>.</li>
+            <li>Each unit type follows the first rule whose conditions hold, top to bottom. A higher rule interrupts a lower one.</li>
+            <li>Buildings train from their own rules whenever their queue is empty. The Base tab holds the build order, base-wide rules and the layout.</li>
+            <li>Goal: destroy every target on the right. The clock is your score. <strong>Restart</strong> reruns the match with your current program.</li>
+          </ul>
+          <h3>Economy</h3>
+          <ul>
+            <li>There is no global bank. Every building keeps its own stockpile, and trains only from it.</li>
+            <li>Blueprints are built by delivery: a gatherer places it, then resources hauled to it pay for it as it grows.</li>
+            <li><em>Haul</em> carries a crate (50 minerals or 25 gas) from one building's stockpile to another that needs it.</li>
+            <li>Tech: Infantry Training → Mech Factory (needs gas) → Port.</li>
+          </ul>
           <div class="cols">
             <dl>
-              <dt>Left-click</dt><dd>Select · <kbd>Shift</kbd> add/remove</dd>
-              <dt>Drag</dt><dd>Box-select units</dd>
-              <dt>Double-click</dt><dd>Select all of that type on screen</dd>
-              <dt>Right-click</dt><dd>Gather, deliver, attack, move · on buildings: set rally</dd>
+              <dt>Left-click / drag</dt><dd>Select · box-select</dd>
               <dt>Wheel / middle-drag / arrows</dt><dd>Zoom / pan</dd>
+              <dt><kbd>P</kbd></dt><dd>Program editor</dd>
+              <dt><kbd>E</kbd></dt><dd>Open the selection's rules</dd>
               <dt><kbd>H</kbd></dt><dd>Jump to Home</dd>
             </dl>
             <dl>
-              <dt><kbd>M</kbd> <kbd>S</kbd> <kbd>A</kbd></dt><dd>Move · Stop · Attack (ground = attack-move)</dd>
-              <dt><kbd>B</kbd> then <kbd>Q</kbd>…<kbd>R</kbd></dt><dd>Build menu (gatherers)</dd>
-              <dt><kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd></dt><dd>Train (buildings)</dd>
               <dt><kbd>Space</kbd> · <kbd>−</kbd> <kbd>+</kbd></dt><dd>Pause · slower / faster</dd>
-              <dt><kbd>Esc</kbd></dt><dd>Cancel / back</dd>
+              <dt><kbd>Esc</kbd></dt><dd>Cancel / close</dd>
+              <dt>Hands-on mode</dt><dd>M1 controls: right-click, <kbd>M</kbd> <kbd>S</kbd> <kbd>A</kbd> <kbd>B</kbd>, train with <kbd>Q</kbd>…</dd>
             </dl>
           </div>
-          <h3>How the economy works</h3>
-          <ul>
-            <li>There is no global bank. Every building keeps its <em>own</em> stockpile, and trains only from it.</li>
-            <li>Gatherers deliver to the nearest Home by default. Right-click another building with them to feed it instead.</li>
-            <li>Blueprints are built by delivery: the builder places it, then gatherers haul its cost to it. It grows as it fills.</li>
-            <li>Tech: Infantry Training → Mech Factory (needs gas) → Port.</li>
-          </ul>
         </div>
       </div>
     </div>

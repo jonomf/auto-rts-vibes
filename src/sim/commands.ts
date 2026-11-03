@@ -13,7 +13,7 @@ import {
   missingRequirement,
   targetEntity,
 } from './actions';
-import type { Command, CommandResult, Entity, EntityId } from './types';
+import type { Command, CommandResult, CommandSource, Entity, EntityId } from './types';
 import type { World } from './world';
 
 const ok: CommandResult = { ok: true };
@@ -70,7 +70,25 @@ function spreadFields(world: World, target: Entity, group: Entity[]): Entity[] {
     .sort((a, b) => Math.hypot(a.x - target.x, a.y - target.y) - Math.hypot(b.x - target.x, b.y - target.y) || a.id - b.id);
 }
 
-export function applyCommand(world: World, cmd: Command): CommandResult {
+export function applyCommand(world: World, cmd: Command, source: CommandSource = 'player'): CommandResult {
+  const result = apply(world, cmd);
+  // Player orders take priority over automation until the unit finishes them.
+  if (result.ok && source === 'player' && 'ids' in cmd)
+    for (const u of units(world, cmd.ids)) {
+      u.manual = cmd.type !== 'stop';
+      u.intent = null;
+    }
+  if (result.ok && source === 'player' && cmd.type === 'build') {
+    const b = world.get(cmd.builderId);
+    if (b) {
+      b.manual = true;
+      b.intent = null;
+    }
+  }
+  return result;
+}
+
+function apply(world: World, cmd: Command): CommandResult {
   switch (cmd.type) {
     case 'move':
       return moveGroup(world, cmd.ids, cmd.x, cmd.y, false);
@@ -94,6 +112,27 @@ export function applyCommand(world: World, cmd: Command): CommandResult {
 
     case 'stop': {
       for (const u of units(world, cmd.ids)) u.order = { type: 'idle' };
+      return ok;
+    }
+
+    case 'haul': {
+      const from = world.get(cmd.fromId);
+      const to = world.get(cmd.toId);
+      if (!from || !to || !isBuilding(from) || !isBuilding(to)) return fail('Haul needs two buildings');
+      if (from.id === to.id) return fail('Pick two different buildings');
+      if (!from.complete) return fail(`${DEFS[from.def].name} is still a blueprint`);
+      const haulers = units(world, cmd.ids).filter(isGatherer);
+      if (haulers.length === 0) return fail('Only gatherers can haul');
+      for (const u of haulers) {
+        u.stuck = 0;
+        u.order = {
+          type: 'haul',
+          res: cmd.res,
+          fromId: from.id,
+          toId: to.id,
+          phase: u.cargo ? 'toTo' : 'toFrom',
+        };
+      }
       return ok;
     }
 

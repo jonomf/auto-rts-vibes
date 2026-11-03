@@ -64,6 +64,9 @@ export type Def = {
 
 export const MAX_QUEUE = 5;
 
+/** One hauling trip between buildings carries this much ("a crate"). */
+export const HAUL_LOAD: Record<ResourceType, number> = { minerals: 50, gas: 25 };
+
 /** Blueprints start at this fraction of full size and grow as resources arrive (Unity: m_ConstructionStartScale). */
 export const CONSTRUCTION_START_SCALE = 0.25;
 
@@ -71,7 +74,7 @@ export const DEFS: Record<DefId, Def> = {
   // ---- Buildings ---------------------------------------------------------
   home: {
     id: 'home',
-    name: 'Home Building',
+    name: 'Home',
     category: 'building',
     radius: 2,
     hp: 1500,

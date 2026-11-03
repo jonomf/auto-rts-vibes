@@ -1,4 +1,4 @@
-import { DEFS } from '../defs';
+import { DEFS, HAUL_LOAD } from '../defs';
 import { edgeDist, pointToSquare } from '../geometry';
 import {
   canAttack,
@@ -70,6 +70,10 @@ export function unitSystem(world: World, dt: number): void {
 
       case 'gather':
         gatherStep(world, u, dt);
+        break;
+
+      case 'haul':
+        haulStep(world, u, dt);
         break;
 
       case 'build': {
@@ -144,6 +148,37 @@ function gatherStep(world: World, u: Entity, dt: number): void {
       }
       return;
     }
+  }
+}
+
+function haulStep(world: World, u: Entity, dt: number): void {
+  const order = u.order;
+  if (order.type !== 'haul') return;
+  const to = world.get(order.toId);
+  if (!to) {
+    u.order = { type: 'idle' };
+    return;
+  }
+  if (order.phase === 'toFrom') {
+    const from = world.get(order.fromId);
+    if (!from) {
+      u.order = { type: 'idle' };
+      return;
+    }
+    if (!moveToEntity(u, from, dt, TOUCH)) return;
+    const amount = Math.min(HAUL_LOAD[order.res], Math.max(0, from.stock[order.res]));
+    if (amount <= 0) {
+      u.order = { type: 'idle' };
+      return;
+    }
+    from.stock[order.res] -= amount;
+    u.cargo = { type: order.res, amount };
+    order.phase = 'toTo';
+    return;
+  }
+  if (moveToEntity(u, to, dt, TOUCH)) {
+    receiveCargo(world, to, u);
+    u.order = { type: 'idle' };
   }
 }
 

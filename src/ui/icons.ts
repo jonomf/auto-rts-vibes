@@ -7,6 +7,7 @@ const paths: Record<UiAction['icon'], string> = {
   attack: '<circle cx="12" cy="12" r="6.5"/><path d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5"/>',
   build: '<path d="M4 20h16M6 20V10l6-5 6 5v10"/><path d="M10 20v-5h4v5"/>',
   back: '<path d="M15 5l-7 7 7 7"/>',
+  program: '<rect x="4" y="5" width="16" height="4" rx="1.5"/><rect x="7" y="11" width="13" height="4" rx="1.5"/><rect x="7" y="17" width="9" height="3" rx="1.2"/><path d="M5 9v9.5h2"/>',
   home: '<rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="M8 13l4-4 4 4M9.5 12v4.5h5V12"/>',
   infantryTraining:
     '<rect x="4" y="4" width="16" height="16" rx="2.5"/><circle cx="8.5" cy="10" r="1.2"/><circle cx="12" cy="10" r="1.2"/><circle cx="15.5" cy="10" r="1.2"/><path d="M8.5 13v3M12 13v3M15.5 13v3"/>',
