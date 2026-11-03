@@ -47,6 +47,8 @@ export class Game {
   mode: Mode = { type: 'normal' };
   menu: 'root' | 'build' = 'root';
   paused = false;
+  /** The game paused itself so a newly added rule can be set up (shown next to that rule). */
+  editPause = false;
   speed = 1;
   /** Real seconds since start (for UI animation, independent of sim speed). */
   time = 0;
@@ -76,6 +78,20 @@ export class Game {
     w.program = this.program;
     this.targetsTotal = w.list((e) => e.team === ENEMY).length;
     return w;
+  }
+
+  /** Pause so a new rule can be set up before units act on its defaults. */
+  pauseForEdit(): void {
+    if (this.paused) return;
+    this.paused = true;
+    this.editPause = true;
+    this.uiVersion++;
+  }
+
+  resume(): void {
+    this.paused = false;
+    this.editPause = false;
+    this.uiVersion++;
   }
 
   restart(): void {
@@ -219,11 +235,13 @@ export class Game {
   setSpeed(speed: number): void {
     this.speed = speed;
     this.paused = false;
+    this.editPause = false;
     this.uiVersion++;
   }
 
   togglePause(): void {
     this.paused = !this.paused;
+    this.editPause = false;
     this.uiVersion++;
   }
 

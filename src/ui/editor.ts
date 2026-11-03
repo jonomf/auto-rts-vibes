@@ -78,6 +78,9 @@ export class Editor {
   private armed: { cmd: string; until: number } | null = null;
   private version = -1;
   private wasOpen = false;
+  /** Rule or step id that was just added (the edit-pause note sits under it). */
+  private newItemId: string | null = null;
+  private noteShown = false;
 
   constructor(app: HTMLElement, private readonly game: Game) {
     this.el = app.querySelector<HTMLElement>('[data-prog]')!;
@@ -164,6 +167,7 @@ export class Editor {
       html += this.rulesHtml(s);
     }
     this.body.innerHTML = html;
+    this.noteShown = !!this.body.querySelector('.editpause');
     if (this.popAnchor) this.reposition();
   }
 
@@ -191,7 +195,7 @@ export class Editor {
           <button data-act="up" data-path="${path}" title="Move up (higher priority)"${i === 0 ? ' disabled' : ''}>↑</button>
           <button data-act="down" data-path="${path}" title="Move down"${i === rules.length - 1 ? ' disabled' : ''}>↓</button>
           <button data-act="del" data-path="${path}" title="Delete rule">✕</button></div>
-      </div>`;
+      </div>${this.noteFor(rule.id, 'rule')}`;
     });
     const suggest = SUGGEST[scope];
     const empty =
@@ -209,6 +213,16 @@ export class Editor {
     return `<div class="rules">${rows.join('')}</div>${empty}<button class="addrule" data-act="addrule" data-scope-arg="${scope}">+ Rule</button>`;
   }
 
+  private showNote(): boolean {
+    return this.game.paused && this.game.editPause && this.newItemId !== null;
+  }
+
+  /** "Paused so you can set this up" note, placed right under the rule or step just added. */
+  private noteFor(id: string, what: 'rule' | 'step'): string {
+    if (id !== this.newItemId || !this.showNote()) return '';
+    return `<div class="editpause" role="status"><span class="ic">❚❚</span><span>Game paused so you can set up this ${what}. Click its words to change them.</span><button data-act="resume">Resume ▶</button></div>`;
+  }
+
   private stepsHtml(): string {
     const order = this.game.program.order;
     const rows = order.map((s, i) => {
@@ -220,7 +234,7 @@ export class Editor {
           <button data-act="up" data-path="${path}"${i === 0 ? ' disabled' : ''} title="Move up">↑</button>
           <button data-act="down" data-path="${path}"${i === order.length - 1 ? ' disabled' : ''} title="Move down">↓</button>
           <button data-act="del" data-path="${path}" title="Delete step">✕</button></div>
-      </div>`;
+      </div>${this.noteFor(s.id, 'step')}`;
     });
     const adders = schemasFor('step', 'base')
       .map((sc) => `<button class="addrule" data-act="addstep" data-kind="${sc.kind}">+ ${esc(headText(sc, {}))}</button>`)
@@ -269,6 +283,10 @@ export class Editor {
 
   private live(): void {
     const g = this.game;
+    if (this.showNote() !== this.noteShown) {
+      if (!this.showNote()) this.newItemId = null;
+      this.render();
+    }
     const w = g.world;
     const intents = new Map<string, number>();
     const byDef = new Map<string, number>();
@@ -428,19 +446,27 @@ export class Editor {
       case 'addrule': {
         const scope = actEl.dataset.scopeArg as ScopeId;
         const sc = schemasFor('act', scope)[0];
-        (p.rules[scope] ??= []).push(r([], sc.make(scope) as Rule['act']));
-        break;
+        const rule = r([], sc.make(scope) as Rule['act']);
+        (p.rules[scope] ??= []).push(rule);
+        return this.addedNew(rule.id);
       }
       case 'suggest': {
         const scope = actEl.dataset.scopeArg as ScopeId;
-        (p.rules[scope] ??= []).push(...(SUGGEST[scope]?.() ?? []));
+        const added = SUGGEST[scope]?.() ?? [];
+        (p.rules[scope] ??= []).push(...added);
+        if (added.length) return this.addedNew(added[added.length - 1].id);
         break;
       }
       case 'addstep': {
         const sc = schemaOf('step', actEl.dataset.kind!)!;
-        p.order.push({ ...(sc.make('base') as Step), id: newId() });
-        break;
+        const step = { ...(sc.make('base') as Step), id: newId() };
+        p.order.push(step);
+        return this.addedNew(step.id);
       }
+      case 'resume':
+        g.resume();
+        this.render();
+        return;
       case 'layout':
         g.mode = g.mode.type === 'layout' ? { type: 'normal' } : { type: 'layout', def: 'infantryTraining' };
         g.programVersion++;
@@ -503,6 +529,14 @@ export class Editor {
         this.openJson();
         return;
     }
+  }
+
+  /** A rule or step was just added: pause so units don't act on its defaults, and point at it. */
+  private addedNew(id: string): void {
+    this.game.pauseForEdit();
+    this.newItemId = id;
+    this.after();
+    this.body.querySelector('.editpause')?.scrollIntoView({ block: 'nearest' });
   }
 
   private after(): void {
