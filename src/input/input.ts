@@ -16,10 +16,32 @@ const DOUBLE_CLICK_MS = 300;
 
 export const snapToGrid = snapFootprint;
 
+export type WheelMode = 'auto' | 'pan' | 'zoom';
+
+/** How long after a trackpad-looking scroll the rest of that gesture is still treated as a trackpad. */
+const GESTURE_GAP_MS = 350;
+
+/** Is this scroll a camera pan (trackpad swipe) or a zoom (mouse wheel)? */
+export function classifyScroll(
+  e: Pick<WheelEvent, 'deltaX' | 'deltaY' | 'deltaMode' | 'timeStamp'>,
+  mode: WheelMode,
+  lastTrackpadAt: number,
+): 'pan' | 'zoom' {
+  if (mode !== 'auto') return mode;
+  if (e.deltaMode !== 0) return 'zoom'; // line/page steps: a mouse wheel
+  if (e.timeStamp - lastTrackpadAt < GESTURE_GAP_MS) return 'pan';
+  const fractional = !Number.isInteger(e.deltaY) || !Number.isInteger(e.deltaX);
+  if (e.deltaX !== 0 || fractional || Math.abs(e.deltaY) < 40) return 'pan';
+  return 'zoom';
+}
+
 export class Input {
   private keys = new Set<string>();
-  private panning: { x: number; y: number } | null = null;
+  /** Camera drag in progress: middle button, right button (if it moves), or Alt + left. */
+  private panning: { x: number; y: number; x0: number; y0: number; button: number; moved: boolean } | null = null;
   private lastClick = { id: -1, at: 0 };
+  /** When the last scroll event that looked like a trackpad arrived (gestures stay "trackpad" until they pause). */
+  private trackpadAt = -Infinity;
 
   constructor(private readonly canvas: HTMLCanvasElement, private readonly game: Game) {
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -29,7 +51,11 @@ export class Input {
     canvas.addEventListener('pointerleave', () => (game.hoverScreen = { x: -1, y: -1 }));
     canvas.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
     window.addEventListener('keydown', (e) => this.onKey(e));
-    window.addEventListener('keyup', (e) => this.keys.delete(e.key));
+    window.addEventListener('keyup', (e) => {
+      this.keys.delete(e.key);
+      // Alt is used for Alt + drag panning; don't let releasing it focus the browser menu.
+      if (e.key === 'Alt') e.preventDefault();
+    });
     window.addEventListener('blur', () => this.keys.clear());
   }
 
@@ -62,13 +88,12 @@ export class Input {
   private onDown(e: PointerEvent): void {
     const p = this.local(e);
     this.updateHover(p.x, p.y);
-    if (e.button === 1) {
+    // Middle drag, right drag and Alt + left drag move the camera.
+    // A right press that doesn't move is still a right-click (handled on release).
+    if (e.button === 1 || e.button === 2 || (e.button === 0 && e.altKey)) {
       e.preventDefault();
-      this.panning = p;
-      return;
-    }
-    if (e.button === 2) {
-      this.rightClick();
+      this.panning = { x: p.x, y: p.y, x0: p.x, y0: p.y, button: e.button, moved: e.button !== 2 };
+      this.canvas.setPointerCapture(e.pointerId);
       return;
     }
     if (e.button !== 0) return;
@@ -82,9 +107,15 @@ export class Input {
 
   private onMove(e: PointerEvent): void {
     const p = this.local(e);
-    if (this.panning) {
-      this.game.camera.pan(p.x - this.panning.x, p.y - this.panning.y);
-      this.panning = p;
+    const pan = this.panning;
+    if (pan) {
+      if (!pan.moved && Math.hypot(p.x - pan.x0, p.y - pan.y0) >= DRAG_THRESHOLD) pan.moved = true;
+      if (pan.moved) {
+        this.game.camera.pan(p.x - pan.x, p.y - pan.y);
+        this.canvas.style.cursor = 'grabbing';
+      }
+      pan.x = p.x;
+      pan.y = p.y;
     }
     const inside = e.target === this.canvas || this.game.drag;
     if (inside) this.updateHover(p.x, p.y);
@@ -95,8 +126,11 @@ export class Input {
   }
 
   private onUp(e: PointerEvent): void {
-    if (e.button === 1) {
+    const pan = this.panning;
+    if (pan && e.button === pan.button) {
       this.panning = null;
+      this.canvas.style.cursor = '';
+      if (pan.button === 2 && !pan.moved) this.rightClick();
       return;
     }
     if (e.button !== 0 || !this.game.drag) return;
@@ -106,10 +140,32 @@ export class Input {
     else this.clickSelect(e.shiftKey);
   }
 
+  /**
+   * Scroll input. Trackpads: two-finger swipe pans, pinch zooms (browsers send pinch as
+   * Ctrl + wheel). Mouse wheels zoom. In "auto", a scroll counts as a trackpad when it
+   * has sideways movement or small / fractional steps; mouse wheels click in big integer
+   * steps (or in lines). Once a gesture looks like a trackpad, it stays one until it pauses.
+   */
   private onWheel(e: WheelEvent): void {
     e.preventDefault();
     const p = this.local(e);
-    this.game.camera.zoomAt(Math.exp(-e.deltaY * 0.0015), p.x, p.y);
+    const cam = this.game.camera;
+    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? cam.height : 1;
+    const dx = e.deltaX * unit;
+    const dy = e.deltaY * unit;
+
+    if (e.ctrlKey) {
+      // Pinch (or Ctrl + wheel). Pinch deltas are small, so they get more weight.
+      const k = Math.abs(dy) < 20 ? 0.012 : 0.0025;
+      cam.zoomAt(Math.exp(-dy * k), p.x, p.y);
+      return;
+    }
+    if (classifyScroll(e, this.game.wheelMode, this.trackpadAt) === 'pan') {
+      this.trackpadAt = e.timeStamp;
+      cam.pan(-dx, -dy);
+      return;
+    }
+    cam.zoomAt(Math.exp(-dy * 0.0015), p.x, p.y);
   }
 
   // ---- Selection -----------------------------------------------------------------

@@ -43,6 +43,7 @@ Programs are plain JSON (`src/automation/types.ts`). **Load starter** gives a co
 - **Construction by delivery.** A gatherer places a blueprint (`B`). The blueprint is paid for by gatherers hauling resources to it, and it grows from 25% scale to full size as it fills. Nothing is deducted up front.
 - **Tech.** Home → Infantry Training (Light/Heavy Infantry) → Mech Factory (Tank, needs gas) → Port (Ship, flying).
 - **Combat.** Right-click to attack. `A` + click does attack-move. Idle units engage enemies in range.
+- **Camera.** Trackpad: two-finger swipe pans, pinch zooms. Mouse: wheel zooms. Right- or middle-drag, `Alt`+drag and the arrow keys pan anywhere. If swipe detection guesses wrong, set it in the help sheet (`?`).
 - **Time.** `Space` pauses. `−` and `+` set 0.25×–4×. The sim runs on a fixed 20 Hz tick, independent of frame rate.
 
 Press `?` in game for all controls.

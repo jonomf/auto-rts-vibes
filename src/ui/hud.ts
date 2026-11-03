@@ -7,6 +7,7 @@ import { computeActions, ownControllable, type UiAction } from './actions';
 import { icon } from './icons';
 import { followingText, scopeOfEntity } from './editor';
 import type { Posture, ScopeId } from '../automation/types';
+import type { WheelMode } from '../input/input';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
@@ -30,6 +31,7 @@ export class Hud {
     posture: HTMLElement;
     handsOff: HTMLElement;
     programs: HTMLElement;
+    wheelMode: HTMLElement;
   };
 
   constructor(root: HTMLElement, private readonly game: Game) {
@@ -47,7 +49,13 @@ export class Hud {
       posture: q('[data-posture]'),
       handsOff: q('[data-handsoff]'),
       programs: q('[data-programs]'),
+      wheelMode: q('[data-wheelmode]'),
     };
+
+    this.el.wheelMode.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-wm]');
+      if (btn) game.setWheelMode(btn.dataset.wm as WheelMode);
+    });
 
     this.el.posture.addEventListener('click', (e) => {
       const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-p]');
@@ -146,6 +154,18 @@ export class Hud {
     );
     this.set(this.el.handsOff, g.handsOff ? '<span class="dot on"></span>Hands-off' : '<span class="dot"></span>Hands-on');
     this.el.programs.classList.toggle('on', g.programsOpen);
+    this.set(
+      this.el.wheelMode,
+      (
+        [
+          ['auto', 'Auto-detect'],
+          ['pan', 'Always pan'],
+          ['zoom', 'Always zoom'],
+        ] as const
+      )
+        .map(([v, label]) => `<button data-wm="${v}" class="${g.wheelMode === v ? 'on' : ''}">${label}</button>`)
+        .join(''),
+    );
   }
 
   private objectiveHtml(): string {

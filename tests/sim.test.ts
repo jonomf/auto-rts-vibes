@@ -286,3 +286,20 @@ describe('simulation', () => {
     expect(home.stock.minerals).toBeGreaterThan(0);
   });
 });
+
+describe('input: scroll classification', () => {
+  it('trackpad swipes pan, mouse wheels zoom, gestures stay together', async () => {
+    const { classifyScroll } = await import('../src/input/input');
+    const ev = (deltaX: number, deltaY: number, deltaMode = 0, timeStamp = 1000) => ({ deltaX, deltaY, deltaMode, timeStamp });
+    expect(classifyScroll(ev(0, 100), 'auto', -Infinity)).toBe('zoom'); // Chrome mouse wheel notch
+    expect(classifyScroll(ev(0, 125), 'auto', -Infinity)).toBe('zoom'); // ... at 125% display scaling
+    expect(classifyScroll(ev(0, 3, 1), 'auto', -Infinity)).toBe('zoom'); // Firefox line mode
+    expect(classifyScroll(ev(4, 0), 'auto', -Infinity)).toBe('pan'); // sideways swipe
+    expect(classifyScroll(ev(0, 12), 'auto', -Infinity)).toBe('pan'); // small step
+    expect(classifyScroll(ev(0, 57.5), 'auto', -Infinity)).toBe('pan'); // fractional
+    expect(classifyScroll(ev(0, 120, 0, 1100), 'auto', 1000)).toBe('pan'); // fast flick mid-gesture
+    expect(classifyScroll(ev(0, 120, 0, 2000), 'auto', 1000)).toBe('zoom'); // new gesture after a pause
+    expect(classifyScroll(ev(0, 100), 'pan', -Infinity)).toBe('pan');
+    expect(classifyScroll(ev(5, 0), 'zoom', -Infinity)).toBe('zoom');
+  });
+});

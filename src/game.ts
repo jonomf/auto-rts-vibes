@@ -3,6 +3,7 @@ import { DT, World } from './sim/world';
 import { ENEMY, type Command, type CommandResult, type Entity, type EntityId } from './sim/types';
 import { createSandbox } from './sim/scenario';
 import { Camera } from './render/camera';
+import type { WheelMode } from './input/input';
 import { emptyProgram, sanitizeProgram } from './automation/blocks';
 import type { Posture, Program, ScopeId } from './automation/types';
 
@@ -21,6 +22,7 @@ export const SPEEDS = [0.25, 0.5, 1, 2, 4] as const;
 
 const PROGRAM_KEY = 'auto-rts.program.v1';
 const BEST_KEY = 'auto-rts.best.v1';
+const WHEEL_KEY = 'auto-rts.wheel.v1';
 
 /** Commands that steer units or buildings directly (blocked in hands-off mode). */
 const DIRECT: Command['type'][] = ['move', 'attackMove', 'target', 'stop', 'haul', 'build', 'train', 'cancelTrain', 'rally'];
@@ -34,6 +36,8 @@ export class Game {
   world: World;
   readonly camera = new Camera();
   program: Program;
+  /** Two-finger swipe / scroll wheel: auto-detect, always pan, or always zoom. */
+  wheelMode: WheelMode = loadWheelMode();
   /** No direct unit control: the program runs everything (the Auto-Starcraft rule). */
   handsOff = true;
   programsOpen = true;
@@ -142,6 +146,16 @@ export class Game {
     this.programChanged();
   }
 
+  setWheelMode(m: WheelMode): void {
+    this.wheelMode = m;
+    try {
+      localStorage.setItem(WHEEL_KEY, m);
+    } catch {
+      /* ignore */
+    }
+    this.uiVersion++;
+  }
+
   setPosture(p: Posture): void {
     this.world.auto.posture = p;
     this.uiVersion++;
@@ -225,6 +239,16 @@ export class Game {
 }
 
 // ---- Persistence (per-browser convenience; the game works without it) ----------------------
+
+function loadWheelMode(): WheelMode {
+  try {
+    const v = localStorage.getItem(WHEEL_KEY);
+    if (v === 'auto' || v === 'pan' || v === 'zoom') return v;
+  } catch {
+    /* ignore */
+  }
+  return 'auto';
+}
 
 function loadProgram(): Program {
   try {
