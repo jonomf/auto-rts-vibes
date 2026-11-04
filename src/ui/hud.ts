@@ -226,7 +226,7 @@ export class Hud {
     const idle = gatherers.filter((e) => e.order.type === 'idle').length;
     const army = g.world.list((e) => ownControllable(e) && !!DEFS[e.def].attack).length;
     return `<div class="head"><span>Stockpiles</span><span class="legend"><b class="m">min</b><b class="g">gas</b></span></div>${rows.join('')}
-      <div class="foot"><span>${gatherers.length} gatherers${idle ? ` · <em>${idle} idle</em>` : ''}</span><span>${army} army</span></div>`;
+      <div class="foot"><span>${gatherers.length} SCVs${idle ? ` · <em>${idle} idle</em>` : ''}</span><span>${army} army</span></div>`;
   }
 
   // ---- Selection panel -----------------------------------------------------------------
@@ -248,14 +248,14 @@ export class Hud {
     if (this.game.handsOff)
       return `<div class="title muted">Nothing selected</div>
       <ul class="hints">
-        <li>Your units only do what the program says. Open it with <kbd>P</kbd> and give your Gatherers a rule</li>
+        <li>Your units only do what the program says. Open it with <kbd>P</kbd> and give your SCVs a rule</li>
         <li>Or click <b>Load starter</b> in the editor for a complete program, then improve it</li>
         <li>Destroy every target on the right; the clock is your score · <kbd>?</kbd> for help</li>
       </ul>`;
     return `<div class="title muted">Nothing selected</div>
       <ul class="hints">
         <li>Hands-on: <kbd>Drag</kbd> to select, <kbd>Right-click</kbd> minerals, gas, enemies or ground</li>
-        <li>Gatherers deliver to the nearest Home, or <kbd>Right-click</kbd> a building to feed its stockpile</li>
+        <li>SCVs deliver to the nearest Command Center, or <kbd>Right-click</kbd> a building to feed its stockpile</li>
         <li><kbd>B</kbd> to build · your orders win until the unit finishes, then the program takes over</li>
       </ul>`;
   }

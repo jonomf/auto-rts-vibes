@@ -376,7 +376,7 @@ export class Editor {
     const counts = new Map<DefId, number>();
     for (const s of lay.slots) counts.set(s.def, (counts.get(s.def) ?? 0) + 1);
     const summary = [...counts].map(([d, n]) => `${n}× ${esc(DEFS[d].name)}`).join(', ') || 'no slots';
-    let html = `<p class="note">Automated builds use the next free slot of their type, then any open ground near Home. Slots: ${summary}.</p>`;
+    let html = `<p class="note">Automated builds use the next free slot of their type, then any open ground near the Command Center. Slots: ${summary}.</p>`;
     html += `<div class="adders"><button class="addrule${editing ? ' on' : ''}" data-act="layout">${editing ? 'Done editing layout' : 'Edit layout on map'}</button><button class="addrule" data-act="layoutreset">Reset layout</button></div>`;
     if (editing) {
       const cur = (g.mode as { def: string }).def;
