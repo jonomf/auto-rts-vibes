@@ -31,22 +31,22 @@ export type Schema = {
 
 // ---- Scopes ---------------------------------------------------------------------------
 
-export const UNIT_SCOPES = ['gatherer', 'army', 'lightInfantry', 'heavyInfantry', 'tank', 'ship'] as const satisfies readonly ScopeId[];
-export const BUILDING_SCOPES = ['home', 'infantryTraining', 'mechFactory', 'port'] as const satisfies readonly ScopeId[];
+export const UNIT_SCOPES = ['scv', 'army', 'marine', 'marauder', 'siegeTank', 'banshee'] as const satisfies readonly ScopeId[];
+export const BUILDING_SCOPES = ['commandCenter', 'barracks', 'factory', 'starport'] as const satisfies readonly ScopeId[];
 export const ALL_SCOPES: ScopeId[] = ['base', ...UNIT_SCOPES, ...BUILDING_SCOPES];
 
 export type ScopeKind = 'base' | 'unit' | 'building';
 export const scopeKind = (s: ScopeId): ScopeKind =>
   s === 'base' ? 'base' : s === 'army' || DEFS[s as DefId]?.category === 'unit' ? 'unit' : 'building';
-export const isFighterScope = (s: ScopeId) => s === 'army' || (scopeKind(s) === 'unit' && s !== 'gatherer');
+export const isFighterScope = (s: ScopeId) => s === 'army' || (scopeKind(s) === 'unit' && s !== 'scv');
 
 export const scopeName = (s: ScopeId) => (s === 'base' ? 'Base' : s === 'army' ? 'Army' : DEFS[s as DefId].name);
 
 // ---- Option lists -------------------------------------------------------------------------
 
-const BUILDINGS: DefId[] = ['home', 'infantryTraining', 'mechFactory', 'port'];
-const PRODUCTION: DefId[] = ['infantryTraining', 'mechFactory', 'port'];
-const UNITS: DefId[] = ['gatherer', 'lightInfantry', 'heavyInfantry', 'tank', 'ship'];
+const BUILDINGS: DefId[] = ['commandCenter', 'barracks', 'factory', 'starport'];
+const PRODUCTION: DefId[] = ['barracks', 'factory', 'starport'];
+const UNITS: DefId[] = ['scv', 'marine', 'marauder', 'siegeTank', 'banshee'];
 
 const defOpts = (defs: DefId[]): Opt[] => defs.map((d) => ({ v: d, label: DEFS[d].name }));
 const RES: Opt[] = [
@@ -88,7 +88,7 @@ const CONDITIONS: Schema[] = [
     ],
     help: 'How many you have, counting queued units, blueprints and buildings on the way.',
     allowed: anyScope,
-    make: () => ({ kind: 'count', what: 'gatherer', op: '<', n: 12 }),
+    make: () => ({ kind: 'count', what: 'scv', op: '<', n: 12 }),
   },
   {
     kind: 'has',
@@ -98,7 +98,7 @@ const CONDITIONS: Schema[] = [
     fields: [{ key: 'def', type: 'enum', options: () => defOpts(BUILDINGS) }],
     help: 'Whether a finished building of that type exists.',
     allowed: anyScope,
-    make: () => ({ kind: 'has', def: 'infantryTraining', not: false }),
+    make: () => ({ kind: 'has', def: 'barracks', not: false }),
   },
   {
     kind: 'stock',
@@ -117,7 +117,7 @@ const CONDITIONS: Schema[] = [
     ],
     help: "A building's own stockpile. With several of that type, any one of them counts.",
     allowed: anyScope,
-    make: () => ({ kind: 'stock', at: 'home', res: 'minerals', op: '>=', n: 50 }),
+    make: () => ({ kind: 'stock', at: 'commandCenter', res: 'minerals', op: '>=', n: 50 }),
   },
   {
     kind: 'needs',
@@ -176,7 +176,7 @@ const CONDITIONS: Schema[] = [
     tokens: [],
     fields: [],
     help: 'Whether the gatherer is holding a load.',
-    allowed: (s) => s === 'gatherer',
+    allowed: (s) => s === 'scv',
     make: () => ({ kind: 'carrying', not: false }),
   },
   {
@@ -207,12 +207,12 @@ const ACTIONS: Schema[] = [
       {
         key: 'to',
         type: 'enum',
-        options: () => [{ v: 'home', label: 'Home' }, { v: 'needy', label: 'whatever needs it' }, ...defOpts(PRODUCTION)],
+        options: () => [{ v: 'commandCenter', label: 'Home' }, { v: 'needy', label: 'whatever needs it' }, ...defOpts(PRODUCTION)],
       },
     ],
     help: 'Harvest the least-busy field near the drop-off, and carry loads there. Keeps going.',
-    allowed: (s) => s === 'gatherer',
-    make: () => ({ kind: 'gather', res: 'minerals', to: 'home' }),
+    allowed: (s) => s === 'scv',
+    make: () => ({ kind: 'gather', res: 'minerals', to: 'commandCenter' }),
   },
   {
     kind: 'haul',
@@ -229,8 +229,8 @@ const ACTIONS: Schema[] = [
       },
     ],
     help: 'One trip: take a crate (50 minerals or 25 gas) out of a stockpile and deliver it where it is needed.',
-    allowed: (s) => s === 'gatherer',
-    make: () => ({ kind: 'haul', res: 'minerals', from: 'home', to: 'needy' }),
+    allowed: (s) => s === 'scv',
+    make: () => ({ kind: 'haul', res: 'minerals', from: 'commandCenter', to: 'needy' }),
   },
   {
     kind: 'attack',
@@ -280,7 +280,7 @@ const ACTIONS: Schema[] = [
     fields: [{ key: 'def', type: 'enum', options: (s) => defOpts((DEFS[s as DefId]?.trains ?? UNITS) as DefId[]) }],
     help: "Queue one unit when the queue is empty, paid from this building's own stock. If it can't afford it, the next rule gets a turn.",
     allowed: (s) => scopeKind(s) === 'building',
-    make: (s) => ({ kind: 'train', def: DEFS[s as DefId]?.trains?.[0] ?? 'gatherer' }),
+    make: (s) => ({ kind: 'train', def: DEFS[s as DefId]?.trains?.[0] ?? 'scv' }),
   },
   {
     kind: 'build',
@@ -290,7 +290,7 @@ const ACTIONS: Schema[] = [
     fields: [{ key: 'def', type: 'enum', options: () => defOpts(BUILDINGS) }],
     help: 'Send a gatherer to place a blueprint at the next free layout slot. At most one unfinished blueprint per type from rules.',
     allowed: (s) => s === 'base',
-    make: () => ({ kind: 'build', def: 'infantryTraining' }),
+    make: () => ({ kind: 'build', def: 'barracks' }),
   },
   {
     kind: 'setPosture',
@@ -315,7 +315,7 @@ const STEPS: Schema[] = [
     fields: [{ key: 'def', type: 'enum', options: () => defOpts(BUILDINGS) }],
     help: 'Place a blueprint (waits until its tech is ready and a gatherer is free).',
     allowed: anyScope,
-    make: () => ({ kind: 'build', def: 'infantryTraining' }),
+    make: () => ({ kind: 'build', def: 'barracks' }),
   },
   {
     kind: 'train',
@@ -328,7 +328,7 @@ const STEPS: Schema[] = [
     ],
     help: 'Queue them wherever they can be afforded until you have this many.',
     allowed: anyScope,
-    make: () => ({ kind: 'train', def: 'gatherer', n: 8 }),
+    make: () => ({ kind: 'train', def: 'scv', n: 8 }),
   },
   {
     kind: 'wait',
@@ -338,7 +338,7 @@ const STEPS: Schema[] = [
     fields: [],
     help: 'Hold the build order until a condition is true.',
     allowed: anyScope,
-    make: () => ({ kind: 'wait', cond: { kind: 'count', what: 'gatherer', op: '>=', n: 10 } }),
+    make: () => ({ kind: 'wait', cond: { kind: 'count', what: 'scv', op: '>=', n: 10 } }),
   },
   {
     kind: 'setPosture',
@@ -463,13 +463,13 @@ export function sanitizeProgram(raw: unknown): Program {
 
 export const DEFAULT_LAYOUT = (): Program['layout'] => ({
   slots: [
-    { def: 'infantryTraining', dx: 6, dy: -6 },
-    { def: 'infantryTraining', dx: 6, dy: 6 },
-    { def: 'mechFactory', dx: 11, dy: -3 },
-    { def: 'mechFactory', dx: 11, dy: 3.5 },
-    { def: 'port', dx: 1, dy: -11 },
-    { def: 'port', dx: 1, dy: 11 },
-    { def: 'home', dx: 19.5, dy: 14.5 },
+    { def: 'barracks', dx: 6, dy: -6 },
+    { def: 'barracks', dx: 6, dy: 6 },
+    { def: 'factory', dx: 11, dy: -3 },
+    { def: 'factory', dx: 11, dy: 3.5 },
+    { def: 'starport', dx: 1, dy: -11 },
+    { def: 'starport', dx: 1, dy: 11 },
+    { def: 'commandCenter', dx: 19.5, dy: 14.5 },
   ],
   muster: { dx: 17, dy: 0 },
 });

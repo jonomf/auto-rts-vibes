@@ -1,4 +1,7 @@
-import { DEFS, type DefId } from './defs';
+import { DEFS, SUPPLY_MAX, type DefId } from './defs';
+import { RULESETS, type Ruleset } from './ruleset';
+import { statusSystem } from './systems/status';
+import { defenseSystem } from './systems/defense';
 import { containsPoint, edgeDist } from './geometry';
 import { applyCommand } from './commands';
 import { productionSystem } from './systems/production';
@@ -16,6 +19,16 @@ const EFFECT_TTL_TICKS = 12;
 
 export type MapSize = { width: number; height: number };
 
+/** Match statistics (the strategy lab and the end-of-match summary read these). */
+export type Stats = {
+  /** Value (minerals + gas) of units and buildings lost, per team index (0 = player, 1 = enemy). */
+  lostValue: [number, number];
+  lostUnits: [number, number];
+  gathered: { minerals: number; gas: number };
+  /** Seconds the player had a production building idle because of the supply cap (hard rules). */
+  supplyBlocked: number;
+};
+
 /**
  * The whole simulation: pure data + fixed-tick systems, no DOM or rendering.
  * Deterministic given the same initial state and the same commands on the same ticks.
@@ -30,11 +43,14 @@ export class World {
   /** The player's automation program (null = no automation at all). */
   program: Program | null = null;
   readonly auto: AutoState = createAutoState();
+  ruleset: Ruleset;
+  readonly stats: Stats = { lostValue: [0, 0], lostUnits: [0, 0], gathered: { minerals: 0, gas: 0 }, supplyBlocked: 0 };
   private nextId = 1;
   private dead = new Set<EntityId>();
 
-  constructor(map: MapSize = { width: 64, height: 44 }) {
+  constructor(map: MapSize = { width: 64, height: 44 }, ruleset: Ruleset = RULESETS.classic) {
     this.map = map;
+    this.ruleset = ruleset;
   }
 
   get seconds(): number {
@@ -71,6 +87,13 @@ export class World {
       cooldown: 0,
       intent: null,
       manual: false,
+      addon: null,
+      linkId: null,
+      sieged: false,
+      deploying: 0,
+      stimmed: 0,
+      slowed: 0,
+      leash: null,
       ...overrides,
     };
     this.entities.set(e.id, e);
@@ -87,6 +110,33 @@ export class World {
     if (this.dead.has(e.id)) return;
     this.dead.add(e.id);
     this.effects.push({ type: 'death', tick: this.tick, x: e.x, y: e.y, radius: DEFS[e.def].radius });
+    const d = DEFS[e.def];
+    if (e.team === 0 || e.team === 1) {
+      this.stats.lostValue[e.team] += (d.cost?.minerals ?? 0) + (d.cost?.gas ?? 0);
+      if (d.category === 'unit') this.stats.lostUnits[e.team]++;
+    }
+    // Attached add-ons live and die with their building.
+    const link = this.get(e.linkId);
+    if (link) {
+      if (d.category === 'building' && link.linkId === e.id) {
+        if (link.addon) link.addon = null; // the add-on died: its building loses it
+        else this.kill(link); // the building died: so does its add-on
+      }
+    }
+  }
+
+  /** Supply used (units alive + queued) and provided (finished buildings), capped at 200. */
+  supply(team: Team): { used: number; cap: number } {
+    let used = 0;
+    let cap = 0;
+    for (const e of this.all()) {
+      if (e.team !== team) continue;
+      const d = DEFS[e.def];
+      used += d.supply ?? 0;
+      for (const q of e.queue) used += DEFS[q.def].supply ?? 0;
+      if (e.complete) cap += d.supplyProvided ?? 0;
+    }
+    return { used, cap: Math.min(SUPPLY_MAX, cap) };
   }
 
   isAlive(e: Entity): boolean {
@@ -157,7 +207,9 @@ export class World {
 
     productionSystem(this, DT);
     if (this.program && this.tick % AUTO_EVERY === 0) automationSystem(this, this.program);
+    statusSystem(this, DT);
     unitSystem(this, DT);
+    defenseSystem(this, DT);
     separationSystem(this);
 
     for (const id of this.dead) this.entities.delete(id);
@@ -179,7 +231,7 @@ export class World {
     const parts: string[] = [String(this.tick), this.auto.posture, String(this.auto.step)];
     for (const e of this.all())
       parts.push(
-        `${e.id}:${e.def}:${e.x.toFixed(3)},${e.y.toFixed(3)}:${e.hp.toFixed(1)}:${e.stock.minerals},${e.stock.gas}:${e.order.type}:${e.intent}`,
+        `${e.id}:${e.def}:${e.x.toFixed(3)},${e.y.toFixed(3)}:${e.hp.toFixed(1)}:${e.stock.minerals},${e.stock.gas}:${e.order.type}:${e.intent}:${e.addon}:${e.sieged}`,
       );
     return parts.join('|');
   }

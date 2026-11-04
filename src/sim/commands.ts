@@ -3,7 +3,10 @@
  * (in M2) automation programs both issue these same commands.
  */
 import { DEFS, costOf } from './defs';
+import { startDeploy } from './systems/units';
+import { applyStim } from './systems/status';
 import {
+  checkAddon,
   canAttack,
   checkPlacement,
   checkTrain,
@@ -112,6 +115,35 @@ function apply(world: World, cmd: Command): CommandResult {
 
     case 'stop': {
       for (const u of units(world, cmd.ids)) u.order = { type: 'idle' };
+      return ok;
+    }
+
+    case 'siege': {
+      const tanks = units(world, cmd.ids).filter((u) => DEFS[u.def].siege);
+      if (tanks.length === 0) return fail('Only Siege Tanks can siege');
+      for (const u of tanks) {
+        if (cmd.on && !u.sieged) u.order = { type: 'idle' };
+        startDeploy(u, cmd.on);
+      }
+      return ok;
+    }
+
+    case 'stim': {
+      const bio = units(world, cmd.ids).filter((u) => DEFS[u.def].stim);
+      if (bio.length === 0) return fail('Only Marines and Marauders can stim');
+      const n = bio.filter((u) => applyStim(world, u)).length;
+      return n > 0 ? ok : fail('Already stimmed, or too hurt to stim');
+    }
+
+    case 'addon': {
+      const b = world.get(cmd.buildingId);
+      if (!controllable(b) || !isBuilding(b)) return fail('No building selected');
+      const check = checkAddon(world, b, cmd.def);
+      if (!check.ok) return check;
+      const c = costOf(cmd.def);
+      b.stock.minerals -= c.minerals;
+      b.stock.gas -= c.gas;
+      b.queue.push({ def: cmd.def, elapsed: 0 });
       return ok;
     }
 

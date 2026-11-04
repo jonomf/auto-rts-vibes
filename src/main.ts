@@ -14,7 +14,7 @@ const hud = new Hud(root, game);
 const editor = new Editor(root, game);
 
 // Start framed on the main base and its build area.
-const home = game.world.list((e) => e.def === 'home')[0];
+const home = game.world.list((e) => e.def === 'commandCenter')[0];
 game.camera.x = home.x + 9;
 game.camera.y = home.y;
 game.camera.zoom = 22;

@@ -64,16 +64,16 @@ const MAX_OPTIONS = [null, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16];
 
 /** One-click starting rules for empty scopes. */
 const SUGGEST: Partial<Record<ScopeId, () => Rule[]>> = {
-  gatherer: () => [r([], { kind: 'gather', res: 'minerals', to: 'home' })],
+  scv: () => [r([], { kind: 'gather', res: 'minerals', to: 'commandCenter' })],
   army: () => [
     r([{ kind: 'enemyNear', r: 8, not: false }], { kind: 'attack' }),
     r([{ kind: 'posture', is: 'offense' }], { kind: 'attackMove', to: 'enemy' }),
     r([], { kind: 'move', to: 'muster' }),
   ],
-  home: () => [r([{ kind: 'count', what: 'gatherer', op: '<', n: 16 }], { kind: 'train', def: 'gatherer' })],
-  infantryTraining: () => [r([], { kind: 'train', def: 'lightInfantry' })],
-  mechFactory: () => [r([], { kind: 'train', def: 'tank' })],
-  port: () => [r([], { kind: 'train', def: 'ship' })],
+  commandCenter: () => [r([{ kind: 'count', what: 'scv', op: '<', n: 16 }], { kind: 'train', def: 'scv' })],
+  barracks: () => [r([], { kind: 'train', def: 'marine' })],
+  factory: () => [r([], { kind: 'train', def: 'siegeTank' })],
+  starport: () => [r([], { kind: 'train', def: 'banshee' })],
   base: () => [r([{ kind: 'count', what: 'army', op: '>=', n: 12 }], { kind: 'setPosture', to: 'offense' })],
 };
 
@@ -186,7 +186,7 @@ export class Editor {
       html += `<section><h4>Base rules</h4>${this.rulesHtml('base')}</section>`;
       html += `<section><h4>Layout</h4>${this.layoutHtml()}</section>`;
     } else {
-      if (scopeKind(s) === 'unit' && s !== 'army' && s !== 'gatherer')
+      if (scopeKind(s) === 'unit' && s !== 'army' && s !== 'scv')
         html += `<p class="note">Falls through to the <button class="link" data-scope="army">Army</button> rules.</p>`;
       html += this.rulesHtml(s);
     }
@@ -356,7 +356,7 @@ export class Editor {
     html += `<div class="adders"><button class="addrule${editing ? ' on' : ''}" data-act="layout">${editing ? 'Done editing layout' : 'Edit layout on map'}</button><button class="addrule" data-act="layoutreset">Reset layout</button></div>`;
     if (editing) {
       const cur = (g.mode as { def: string }).def;
-      const pal = (['infantryTraining', 'mechFactory', 'port', 'home'] as const)
+      const pal = (['barracks', 'factory', 'starport', 'commandCenter'] as const)
         .map((d) => `<button class="chip k-act${cur === d ? ' cur' : ''}" data-act="palette" data-def="${d}">${icon(d)}${esc(DEFS[d].name)}</button>`)
         .join('');
       html += `<div class="palette">${pal}<button class="chip k-cond${cur === 'muster' ? ' cur' : ''}" data-act="palette" data-def="muster">${icon('attack')}Muster point</button></div>
@@ -579,7 +579,7 @@ export class Editor {
         this.render();
         return;
       case 'layout':
-        g.mode = g.mode.type === 'layout' ? { type: 'normal' } : { type: 'layout', def: 'infantryTraining' };
+        g.mode = g.mode.type === 'layout' ? { type: 'normal' } : { type: 'layout', def: 'barracks' };
         g.programVersion++;
         g.uiVersion++;
         return;
@@ -890,10 +890,10 @@ export class Editor {
 
 function shortName(s: ScopeId): string {
   const short: Record<string, string> = {
-    lightInfantry: 'Light',
-    heavyInfantry: 'Heavy',
-    infantryTraining: 'Inf. Training',
-    mechFactory: 'Mech Factory',
+    marine: 'Light',
+    marauder: 'Heavy',
+    barracks: 'Inf. Training',
+    factory: 'Mech Factory',
   };
   return short[s] ?? scopeName(s);
 }

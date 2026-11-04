@@ -78,7 +78,7 @@ const cmp = (v: number, op: Op, n: number) => (op === '<' ? v < n : v >= n);
 
 // ---- Conditions ---------------------------------------------------------------------
 
-function ownBuildings(ctx: Ctx, def: DefId | 'home', completeOnly = true): Entity[] {
+function ownBuildings(ctx: Ctx, def: DefId | 'commandCenter', completeOnly = true): Entity[] {
   return ctx.world.list((e) => e.team === ctx.team && e.def === def && (!completeOnly || e.complete));
 }
 
@@ -93,7 +93,7 @@ export function evalCond(ctx: Ctx, c: Condition, self?: Entity): boolean {
       return world.hasCompleted(ctx.team, c.def) !== c.not;
     case 'stock': {
       const places =
-        c.at === 'self' ? (self && isBuilding(self) ? [self] : []) : ownBuildings(ctx, c.at === 'home' ? 'home' : c.at);
+        c.at === 'self' ? (self && isBuilding(self) ? [self] : []) : ownBuildings(ctx, c.at === 'commandCenter' ? 'commandCenter' : c.at);
       if (places.length === 0) return false;
       const vals = places.map((b) => b.stock[c.res]);
       // "Any building of that type": the lowest one for <, the highest one for >=.
@@ -122,7 +122,7 @@ export function evalCond(ctx: Ctx, c: Condition, self?: Entity): boolean {
 
 /** Production buildings keep a reserve of twice their most expensive unit. */
 export function reserveFor(def: DefId, res: ResourceType): number {
-  const trains = def === 'home' ? [] : (DEFS[def].trains ?? []);
+  const trains = def === 'commandCenter' ? [] : (DEFS[def].trains ?? []);
   return 2 * Math.max(0, ...trains.map((t) => costOf(t)[res]));
 }
 
@@ -181,8 +181,8 @@ function nearest(list: Entity[], from: Entity): Entity | undefined {
 }
 
 function resolveDeliver(ctx: Ctx, u: Entity, res: ResourceType, to: string): Entity | undefined {
-  const homes = () => nearest(ownBuildings(ctx, 'home'), u);
-  if (to === 'home') return homes();
+  const homes = () => nearest(ownBuildings(ctx, 'commandCenter'), u);
+  if (to === 'commandCenter') return homes();
   if (to === 'needy') return needyTargets(ctx, res, 'any', undefined, u)[0] ?? homes();
   return nearest(ownBuildings(ctx, to as DefId), u) ?? homes();
 }
@@ -221,7 +221,7 @@ function planUnit(ctx: Ctx, act: Action, u: Entity): Command[] | 'move' | null {
     case 'haul': {
       if (!isGatherer(u)) return null;
       const sources =
-        act.from === 'home' ? ownBuildings(ctx, 'home') : ownBuildings(ctx, act.from);
+        act.from === 'commandCenter' ? ownBuildings(ctx, 'commandCenter') : ownBuildings(ctx, act.from);
       const carrying = u.cargo?.type === act.res;
       const from = sources
         .filter((b) => carrying || b.stock[act.res] >= HAUL_LOAD[act.res] / 2)

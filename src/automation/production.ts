@@ -13,7 +13,7 @@ import type { Program, Rule, ScopeId, Step } from './types';
 export type Keep = number | 'always' | null;
 
 /** Buildings in tech order, each with the units it trains. */
-export const TECH: { building: DefId; units: DefId[] }[] = (['home', 'infantryTraining', 'mechFactory', 'port'] as DefId[]).map(
+export const TECH: { building: DefId; units: DefId[] }[] = (['commandCenter', 'barracks', 'factory', 'starport'] as DefId[]).map(
   (building) => ({ building, units: [...(DEFS[building].trains ?? [])] }),
 );
 
@@ -85,7 +85,7 @@ export function otherRules(p: Program, def: DefId): { scope: ScopeId; index: num
 export function stepFor(p: Program, def: DefId): Step {
   if (isBuildingDef(def)) return { id: newId(), kind: 'build', def };
   const prev = p.order.filter((s): s is Extract<Step, { kind: 'train' }> => s.kind === 'train' && s.def === def);
-  const base = prev.length ? Math.max(...prev.map((s) => s.n)) : def === 'gatherer' ? 4 : 0;
+  const base = prev.length ? Math.max(...prev.map((s) => s.n)) : def === 'scv' ? 4 : 0;
   return { id: newId(), kind: 'train', def, n: base + 1 };
 }
 

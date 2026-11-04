@@ -18,7 +18,7 @@ export type UiAction = {
   disabled?: string;
   tooltip?: string;
   active?: boolean;
-  icon: DefId | 'move' | 'stop' | 'attack' | 'build' | 'back' | 'program';
+  icon: DefId | 'move' | 'stop' | 'attack' | 'build' | 'back' | 'program' | 'siege' | 'stim';
   run: () => void;
 };
 

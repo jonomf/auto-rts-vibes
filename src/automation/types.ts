@@ -16,10 +16,10 @@ export type Posture = 'economy' | 'defense' | 'offense';
 export type Op = '<' | '>=';
 
 export type CountWhat = DefId | 'army';
-export type Place = 'self' | 'home' | DefId;
+export type Place = 'self' | 'commandCenter' | DefId;
 export type NeedWhere = 'any' | 'blueprint' | DefId;
-export type DeliverTo = 'home' | 'needy' | DefId;
-export type HaulFrom = 'home' | DefId;
+export type DeliverTo = 'commandCenter' | 'needy' | DefId;
+export type HaulFrom = 'commandCenter' | DefId;
 export type HaulTo = 'needy' | 'blueprint' | DefId;
 export type Dest = 'muster' | 'home' | 'enemy';
 

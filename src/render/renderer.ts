@@ -266,7 +266,7 @@ export class Renderer {
     ctx.fillStyle = color;
     ctx.lineWidth = 2 / z;
     switch (def) {
-      case 'home': {
+      case 'commandCenter': {
         const a = h * 0.55;
         roundRect(ctx, x - a, y - a, a * 2, a * 2, a * 0.2);
         ctx.stroke();
@@ -281,7 +281,7 @@ export class Renderer {
         ctx.stroke();
         break;
       }
-      case 'infantryTraining':
+      case 'barracks':
         for (const k of [-1, 0, 1]) {
           ctx.beginPath();
           ctx.arc(x + k * h * 0.42, y - h * 0.12, h * 0.12, 0, Math.PI * 2);
@@ -289,7 +289,7 @@ export class Renderer {
           ctx.fillRect(x + k * h * 0.42 - h * 0.09, y + h * 0.05, h * 0.18, h * 0.35);
         }
         break;
-      case 'mechFactory': {
+      case 'factory': {
         const r = h * 0.42;
         ctx.beginPath();
         for (let i = 0; i < 16; i++) {
@@ -304,7 +304,7 @@ export class Renderer {
         ctx.stroke();
         break;
       }
-      case 'port': {
+      case 'starport': {
         const r = h * 0.55;
         ctx.beginPath();
         ctx.arc(x, y, r, 0, Math.PI * 2);
@@ -350,7 +350,7 @@ export class Renderer {
     const sin = Math.sin(e.facing);
 
     switch (e.def) {
-      case 'gatherer': {
+      case 'scv': {
         circle(ctx, p.x, p.y, r);
         ctx.fillStyle = dark;
         ctx.fill();
@@ -393,9 +393,9 @@ export class Renderer {
         }
         break;
       }
-      case 'lightInfantry':
-      case 'heavyInfantry': {
-        const heavy = e.def === 'heavyInfantry';
+      case 'marine':
+      case 'marauder': {
+        const heavy = e.def === 'marauder';
         ctx.strokeStyle = fill;
         ctx.lineWidth = (heavy ? 3.5 : 2.5) / z;
         ctx.beginPath();
@@ -415,7 +415,7 @@ export class Renderer {
         }
         break;
       }
-      case 'tank': {
+      case 'siegeTank': {
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate(e.facing);
@@ -443,7 +443,7 @@ export class Renderer {
         ctx.restore();
         break;
       }
-      case 'ship': {
+      case 'banshee': {
         // Shadow on the ground, hull drawn "above" it.
         ctx.fillStyle = 'rgba(0,0,0,0.35)';
         ctx.beginPath();
@@ -784,7 +784,7 @@ export class Renderer {
   }
 }
 
-const SHORT: Partial<Record<DefId, string>> = { home: 'H', infantryTraining: 'IT', mechFactory: 'MF', port: 'P' };
+const SHORT: Partial<Record<DefId, string>> = { commandCenter: 'H', barracks: 'IT', factory: 'MF', starport: 'P' };
 
 function circle(ctx: CanvasRenderingContext2D, x: number, y: number, r: number): void {
   ctx.beginPath();

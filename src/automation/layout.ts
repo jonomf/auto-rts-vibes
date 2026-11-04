@@ -14,7 +14,7 @@ export function snapFootprint(def: DefId, x: number, y: number): { x: number; y:
 
 /** The main base: the team's oldest completed Home (layout offsets are relative to it). */
 export function anchorOf(world: World, team: Team): Entity | undefined {
-  for (const e of world.all()) if (e.team === team && e.def === 'home' && e.complete) return e;
+  for (const e of world.all()) if (e.team === team && e.def === 'commandCenter' && e.complete) return e;
   return undefined;
 }
 
@@ -31,7 +31,7 @@ export function destPoint(world: World, team: Team, layout: Layout, dest: Dest):
     case 'muster':
       return musterPoint(world, team, layout);
     case 'home':
-      return a ? { x: a.x, y: a.y + DEFS.home.radius + 1.5 } : undefined;
+      return a ? { x: a.x, y: a.y + DEFS.commandCenter.radius + 1.5 } : undefined;
     case 'enemy': {
       const enemies = world.list((e) => e.team !== team && e.team !== NEUTRAL);
       if (enemies.length === 0) return undefined;

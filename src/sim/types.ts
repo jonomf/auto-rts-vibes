@@ -1,4 +1,4 @@
-import type { Cost, DefId, ResourceType } from './defs';
+import type { AddonId, Cost, DefId, ResourceType } from './defs';
 
 export type EntityId = number;
 
@@ -28,6 +28,8 @@ export type Order =
 export type Rally = { kind: 'point'; x: number; y: number } | { kind: 'entity'; id: EntityId };
 
 export type QueueItem = { def: DefId; elapsed: number };
+
+export type { AddonId };
 
 export type Cargo = { type: ResourceType; amount: number };
 
@@ -72,6 +74,24 @@ export type Entity = {
   // Combat --------------------------------------------------------------------
   cooldown: number;
 
+  // Add-ons -------------------------------------------------------------------
+  /** Production building: its add-on (attached or in-place, see Ruleset.addons). */
+  addon: AddonId | null;
+  /** Attached add-on entity (classic rules), or the parent building of an add-on entity. */
+  linkId: EntityId | null;
+
+  // Abilities & status ------------------------------------------------------------
+  /** Siege Tank deployed (siege weapon, can't move). */
+  sieged: boolean;
+  /** Seconds left in a siege / unsiege transition (can't act while > 0). */
+  deploying: number;
+  /** Seconds of Stimpack left. */
+  stimmed: number;
+  /** Seconds of Marauder slow left. */
+  slowed: number;
+  /** Scenario defenders return here if they chase too far (null = no leash). */
+  leash: { x: number; y: number } | null;
+
   // Automation ----------------------------------------------------------------
   /** Rule key this unit is following (see automation/types.ts ruleKey), or null. */
   intent: string | null;
@@ -87,6 +107,9 @@ export type Command =
   /** Contextual right-click on an entity: gather, deposit, attack or follow. */
   | { type: 'target'; ids: EntityId[]; targetId: EntityId }
   | { type: 'stop'; ids: EntityId[] }
+  | { type: 'siege'; ids: EntityId[]; on: boolean }
+  | { type: 'stim'; ids: EntityId[] }
+  | { type: 'addon'; buildingId: EntityId; def: AddonId }
   | { type: 'haul'; ids: EntityId[]; res: ResourceType; fromId: EntityId; toId: EntityId }
   | { type: 'build'; builderId: EntityId; def: DefId; x: number; y: number }
   | { type: 'train'; buildingId: EntityId; def: DefId }
@@ -96,6 +119,8 @@ export type Command =
 export type CommandResult = { ok: true } | { ok: false; reason: string };
 
 export type Effect =
+  | { type: 'heal'; tick: number; x1: number; y1: number; x2: number; y2: number }
+  | { type: 'splash'; tick: number; x: number; y: number; radius: number }
   | { type: 'shot'; tick: number; x1: number; y1: number; x2: number; y2: number; heavy: boolean }
   | { type: 'death'; tick: number; x: number; y: number; radius: number }
   | { type: 'deposit'; tick: number; x: number; y: number; resource: ResourceType; amount: number };

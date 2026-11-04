@@ -42,7 +42,7 @@ export class Game {
   handsOff = true;
   programsOpen = true;
   /** Editor tab: a rule scope, or the combined Build order view. */
-  scope: ScopeId | 'build' = 'gatherer';
+  scope: ScopeId | 'build' = 'scv';
   selection = new Set<EntityId>();
   mode: Mode = { type: 'normal' };
   menu: 'root' | 'build' = 'root';

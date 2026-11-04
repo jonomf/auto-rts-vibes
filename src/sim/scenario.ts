@@ -9,7 +9,7 @@ export function createSandbox(): World {
   const world = new World({ width: 64, height: 44 });
 
   // Main base (Unity scene: Home Building + Minerals/Gas Sources + Gatherers).
-  const home = world.spawn('home', PLAYER, 11, 22);
+  const home = world.spawn('commandCenter', PLAYER, 11, 22);
   home.stock.minerals = 50;
 
   for (const [x, y] of [
@@ -25,7 +25,7 @@ export function createSandbox(): World {
   world.spawn('gasSource', NEUTRAL, 11, 14.5);
   world.spawn('gasSource', NEUTRAL, 11, 29.5);
 
-  for (let i = 0; i < 4; i++) world.spawn('gatherer', PLAYER, 8, 19.8 + i * 1.5);
+  for (let i = 0; i < 4; i++) world.spawn('scv', PLAYER, 8, 19.8 + i * 1.5);
 
   // Expansion site (bottom middle).
   for (const [x, y] of [

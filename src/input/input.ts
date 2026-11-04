@@ -347,7 +347,7 @@ export class Input {
       return;
     }
     if (e.key === 'h' || e.key === 'H') {
-      const home = g.world.list((x) => ownControllable(x) && x.def === 'home')[0];
+      const home = g.world.list((x) => ownControllable(x) && x.def === 'commandCenter')[0];
       if (home) {
         g.camera.x = home.x;
         g.camera.y = home.y;
