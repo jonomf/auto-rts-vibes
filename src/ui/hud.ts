@@ -32,6 +32,7 @@ export class Hud {
     handsOff: HTMLElement;
     programs: HTMLElement;
     wheelMode: HTMLElement;
+    supply: HTMLElement;
   };
 
   constructor(root: HTMLElement, private readonly game: Game) {
@@ -50,6 +51,7 @@ export class Hud {
       handsOff: q('[data-handsoff]'),
       programs: q('[data-programs]'),
       wheelMode: q('[data-wheelmode]'),
+      supply: q('[data-supply]'),
     };
 
     this.el.wheelMode.addEventListener('click', (e) => {
@@ -146,6 +148,15 @@ export class Hud {
     this.el.toast.classList.toggle('show', !!toast);
     this.el.banner.classList.toggle('show', this.bannerHtml() !== '');
     this.set(this.el.objective, this.objectiveHtml());
+    const sup = g.world.supply(PLAYER);
+    const full = sup.used >= sup.cap && sup.cap < 200;
+    const over = sup.used > sup.cap;
+    this.set(
+      this.el.supply,
+      `<span class="k">Supply</span> <b class="${over ? 'over' : full ? 'full' : ''}">${sup.used}/${sup.cap}</b>${
+        over ? '<span class="tag">over cap: training 3× slower</span>' : full ? '<span class="tag">supply blocked</span>' : ''
+      }`,
+    );
     this.set(
       this.el.posture,
       (['economy', 'defense', 'offense'] as const)
@@ -197,7 +208,10 @@ export class Hud {
   /** Every building's own stockpile -- there is no global bank. */
   private stockHtml(): string {
     const g = this.game;
-    const own = g.world.list((e) => ownControllable(e) && isBuilding(e));
+    // Only buildings that keep a stockpile (plus blueprints still being paid for).
+    const own = g.world.list(
+      (e) => ownControllable(e) && isBuilding(e) && (!e.complete || !!DEFS[e.def].trains || !!DEFS[e.def].addons),
+    );
     const rows = own.map((b) => {
       const sel = g.selection.has(b.id) ? ' sel' : '';
       const name = DEFS[b.def].name;
@@ -273,6 +287,9 @@ export class Hud {
       }
       if (d.inert) return html;
       html += `<div class="stockline"><span class="num m">${e.stock.minerals}</span> minerals <span class="num g">${e.stock.gas}</span> gas <span class="muted">in this building</span></div>`;
+      if (d.addons)
+        html += `<div class="line muted">Add-on: ${e.addon ? `<b>${DEFS[e.addon].name}</b>${e.addon === 'reactor' ? ' (trains two at once)' : ' (unlocks advanced units)'}` : 'none'}</div>`;
+      if (d.supplyProvided) html += `<div class="line muted">Provides ${d.supplyProvided} supply</div>`;
       if (d.trains?.length) {
         const slots: string[] = [];
         for (let i = 0; i < MAX_QUEUE; i++) {
@@ -309,11 +326,13 @@ export class Hud {
       const cargo = e.cargo ? `Carrying ${e.cargo.amount} ${e.cargo.type}` : 'Empty-handed';
       html += `<div class="line muted">${cargo}${dep ? ` · delivers to ${esc(DEFS[dep.def].name)}` : ''}</div>`;
     }
-    if (d.attack) {
-      const a = d.attack;
-      const targets = a.hitsAir && a.hitsGround ? 'ground + air' : a.hitsAir ? 'air' : 'ground';
-      html += `<div class="line muted">${a.damage} dmg · range ${a.range} · ${a.cooldown}s · ${targets}${d.flying ? ' · flying' : ''}</div>`;
-    }
+    html += `<div class="line muted">${attrLine(e)}</div>`;
+    const atk = (e.sieged && d.siege) || d.attack;
+    if (atk) html += `<div class="line muted">${weaponLine(atk)}${e.sieged ? ' · sieged' : ''}</div>`;
+    if (d.siege && !e.sieged) html += `<div class="line muted">Siege mode: ${weaponLine(d.siege)}</div>`;
+    if (d.heal) html += `<div class="line muted">Heals bio units ${d.heal.rate} HP/s within ${d.heal.range}</div>`;
+    const status = [e.stimmed > 0 && `stimmed ${e.stimmed.toFixed(0)}s`, e.slowed > 0 && 'slowed', e.deploying > 0 && (e.sieged ? 'packing up' : 'sieging')].filter(Boolean);
+    if (status.length) html += `<div class="line"><span class="tag">${status.join(' · ')}</span></div>`;
     return html;
   }
 
@@ -344,6 +363,23 @@ export class Hud {
       return `All targets destroyed in <b>${clock(g.won)}</b> · <strong>Restart</strong> to race your program again`;
     return '';
   }
+}
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+function attrLine(e: Entity): string {
+  const d = DEFS[e.def];
+  const parts = [(d.tags ?? []).filter((t) => t !== 'structure').map(cap).join(' · '), `armor ${d.armor ?? 0}`];
+  if (d.supply) parts.push(`${d.supply} supply`);
+  if (d.flying) parts.push('flying');
+  return parts.filter(Boolean).join(' · ');
+}
+
+function weaponLine(a: NonNullable<(typeof DEFS)[keyof typeof DEFS]['attack']>): string {
+  const targets = a.hitsAir && a.hitsGround ? 'ground + air' : a.hitsAir ? 'air only' : 'ground only';
+  const dmg = `${a.damage}${a.hits && a.hits > 1 ? `×${a.hits}` : ''}${a.bonus ? ` (+${a.bonus.damage} vs ${a.bonus.vs})` : ''}`;
+  const extra = [a.splash && 'splash', a.slow && 'slows', a.minRange && `min range ${a.minRange}`, a.suicide && 'explodes'].filter(Boolean);
+  return `${dmg} dmg · range ${a.range} · every ${a.cooldown}s · ${targets}${extra.length ? ` · ${extra.join(' · ')}` : ''}`;
 }
 
 function meter(label: string, value: number, max: number, kind: 'm' | 'g' | 'hp'): string {

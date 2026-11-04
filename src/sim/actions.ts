@@ -93,7 +93,7 @@ export function addonSpot(b: Entity): { x: number; y: number } {
 /** Is a building busy building its add-on? */
 export const buildingAddon = (b: Entity) => b.queue.some((q) => isAddon(q.def));
 
-export function checkAddon(world: World, b: Entity, def: AddonId): CommandResult {
+export function checkAddon(world: World, b: Entity, def: AddonId, ignoreCost = false): CommandResult {
   const d = DEFS[b.def];
   if (!d.addons?.includes(def)) return fail(`${d.name} can't take a ${DEFS[def].name}`);
   if (!b.complete) return fail(`${d.name} is still under construction`);
@@ -104,6 +104,7 @@ export function checkAddon(world: World, b: Entity, def: AddonId): CommandResult
     const place = checkPlacement(world, def, spot.x, spot.y, b);
     if (!place.ok) return fail(`No room for the ${DEFS[def].name}: ${place.reason.toLowerCase()}`);
   }
+  if (ignoreCost) return ok;
   const c = costOf(def);
   if (b.stock.minerals < c.minerals) return fail(`Needs ${c.minerals} minerals in this building (has ${b.stock.minerals})`);
   if (b.stock.gas < c.gas) return fail(`Needs ${c.gas} gas in this building (has ${b.stock.gas})`);

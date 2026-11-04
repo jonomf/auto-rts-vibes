@@ -15,12 +15,14 @@
         <div class="brand"><span class="mark"></span>AUTO&#8209;RTS</div>
         <div class="center">
           <div class="clock" data-clock>0:00</div>
+          <div class="supply" data-supply title="Supply used / cap. Supply Depots add 8."></div>
           <div class="objective" data-objective></div>
         </div>
         <div class="right">
           <div class="seg posture" data-posture title="Base-wide posture (rules can read and set it)"></div>
           <button class="pill" data-handsoff title="Hands-off: the program runs everything. Hands-on: you can also give orders (they win until finished)."></button>
           <button class="pill" data-programs title="Open the program editor (P)">Program <kbd>P</kbd></button>
+          <button class="pill" data-match-open title="Choose scenario, rules and program"></button>
           <button class="pill" data-restart title="Restart the match with the current program">Restart</button>
           <div class="seg speed" data-speed></div>
           <button class="help-btn" data-help-toggle title="Controls (?)">?</button>
@@ -37,6 +39,8 @@
         <section class="info" data-info></section>
         <section class="card" data-card></section>
       </footer>
+
+      <div class="help match" data-match></div>
 
       <div class="help" data-help>
         <div class="sheet">

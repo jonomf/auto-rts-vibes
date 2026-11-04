@@ -15,8 +15,12 @@ const step = (s: StepIn): Step => ({ id: `s${n++}`, ...s }) as Step;
 const always = (act: Action, max: number | null = null) => rule([], act, max);
 const count = (what: Extract<Condition, { kind: 'count' }>['what'], op: '<' | '>=', k: number): Condition => ({ kind: 'count', what, op, n: k });
 
-/** SCVs: income to the Command Center, crates out to whatever needs them, gas once there's a Refinery. */
-function scvRules(gasWorkers: number, haulers = 3): Rule[] {
+/**
+ * SCVs: income to the Command Center, crates out to whatever needs them, gas once there's a Refinery.
+ * (The strategy lab found 6 mineral + 4 gas haulers beats both fewer and more; delivering
+ * straight to production buildings is slower, because mining trips get longer.)
+ */
+function scvRules(gasWorkers: number, haulers = 6, gasHaulers = 4): Rule[] {
   return [
     rule(
       [
@@ -32,7 +36,7 @@ function scvRules(gasWorkers: number, haulers = 3): Rule[] {
         { kind: 'stock', at: 'commandCenter', res: 'gas', op: '>=', n: 25 },
       ],
       { kind: 'haul', res: 'gas', from: 'commandCenter', to: 'needy' },
-      2,
+      gasHaulers,
     ),
     rule([{ kind: 'has', def: 'refinery', not: false }], { kind: 'gather', res: 'gas', to: 'commandCenter' }, gasWorkers),
     always({ kind: 'gather', res: 'minerals', to: 'commandCenter' }),
@@ -76,7 +80,8 @@ export function starterProgram(): Program {
       { kind: 'build', def: 'starport' },
     ],
     {
-      base: [SUPPLY_RULE(), ATTACK_AT(14)],
+      // Wait for tanks: a push without them trickles into the Armor line and dies.
+      base: [SUPPLY_RULE(), rule([count('army', '>=', 16), count('siegeTank', '>=', 2)], { kind: 'setPosture', to: 'offense' })],
       scv: scvRules(6),
       army: ARMY(),
       siegeTank: SIEGE(),
@@ -110,7 +115,7 @@ export function bioProgram(): Program {
     ],
     {
       base: [SUPPLY_RULE(), ATTACK_AT(22)],
-      scv: scvRules(3, 4),
+      scv: scvRules(3),
       army: ARMY(),
       marine: STIM(),
       marauder: STIM(),
@@ -140,7 +145,7 @@ export function mechProgram(): Program {
     ],
     {
       base: [SUPPLY_RULE(), ATTACK_AT(12)],
-      scv: scvRules(6, 4),
+      scv: scvRules(6),
       army: ARMY(),
       siegeTank: SIEGE(),
       commandCenter: [rule([count('scv', '<', 20)], { kind: 'train', def: 'scv' })],
@@ -167,7 +172,7 @@ export function airProgram(): Program {
     ],
     {
       base: [SUPPLY_RULE(), ATTACK_AT(10)],
-      scv: scvRules(6, 4),
+      scv: scvRules(6),
       army: ARMY(),
       commandCenter: [rule([count('scv', '<', 20)], { kind: 'train', def: 'scv' })],
       barracks: [rule([count('marine', '<', 2)], { kind: 'train', def: 'marine' })],

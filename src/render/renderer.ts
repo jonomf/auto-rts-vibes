@@ -248,6 +248,20 @@ export class Renderer {
     ctx.stroke();
     this.drawBuildingGlyph(e.def, e.x, e.y, h, fill, z);
 
+    // In-place add-on (streamlined rules): a badge in the corner instead of a separate building.
+    if (e.addon && !e.linkId) {
+      const b = DEFS.techLab.radius * 0.75;
+      const bx = e.x + h - b;
+      const by = e.y + h - b;
+      ctx.fillStyle = COLORS.bg;
+      roundRect(ctx, bx - b, by - b, b * 2, b * 2, b * 0.25);
+      ctx.fill();
+      ctx.strokeStyle = fill;
+      ctx.lineWidth = 1.5 / z;
+      ctx.stroke();
+      this.drawBuildingGlyph(e.addon, bx, by, b, fill, z);
+    }
+
     // Production progress ring.
     const item = e.queue[0];
     if (item) {
@@ -319,6 +333,64 @@ export class Renderer {
         ctx.stroke();
         break;
       }
+      case 'supplyDepot':
+        for (const k of [-0.35, 0.35]) {
+          roundRect(ctx, x - h * 0.6, y + k * h - h * 0.17, h * 1.2, h * 0.34, h * 0.08);
+          ctx.stroke();
+        }
+        break;
+      case 'refinery': {
+        const a = h * 0.5;
+        roundRect(ctx, x - a, y - a, a * 2, a * 2, a * 0.3);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x - h * 0.85, y);
+        ctx.lineTo(x - a, y);
+        ctx.moveTo(x + a, y);
+        ctx.lineTo(x + h * 0.85, y);
+        ctx.moveTo(x, y - h * 0.85);
+        ctx.lineTo(x, y - a);
+        ctx.stroke();
+        circle(ctx, x, y, a * 0.45);
+        ctx.fillStyle = COLORS.gas;
+        ctx.fill();
+        break;
+      }
+      case 'techLab': {
+        ctx.beginPath();
+        ctx.moveTo(x - h * 0.2, y - h * 0.55);
+        ctx.lineTo(x - h * 0.2, y - h * 0.1);
+        ctx.lineTo(x - h * 0.5, y + h * 0.5);
+        ctx.lineTo(x + h * 0.5, y + h * 0.5);
+        ctx.lineTo(x + h * 0.2, y - h * 0.1);
+        ctx.lineTo(x + h * 0.2, y - h * 0.55);
+        ctx.stroke();
+        break;
+      }
+      case 'reactor':
+        circle(ctx, x, y, h * 0.5);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x - h * 0.5, y);
+        ctx.lineTo(x + h * 0.5, y);
+        ctx.moveTo(x, y - h * 0.5);
+        ctx.lineTo(x, y + h * 0.5);
+        ctx.stroke();
+        break;
+      case 'bunker':
+        roundRect(ctx, x - h * 0.6, y - h * 0.15, h * 1.2, h * 0.3, h * 0.1);
+        ctx.fill();
+        break;
+      case 'missileTurret':
+        circle(ctx, x, y, h * 0.45);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x - h * 0.25, y - h * 0.2);
+        ctx.lineTo(x - h * 0.45, y - h * 0.75);
+        ctx.moveTo(x + h * 0.25, y - h * 0.2);
+        ctx.lineTo(x + h * 0.45, y - h * 0.75);
+        ctx.stroke();
+        break;
       case 'dummyBunker': {
         ctx.save();
         roundRect(ctx, x - h * 0.8, y - h * 0.8, h * 1.6, h * 1.6, h * 0.1);
@@ -393,6 +465,68 @@ export class Renderer {
         }
         break;
       }
+      case 'medic': {
+        circle(ctx, p.x, p.y, r);
+        ctx.fillStyle = '#e9f2f7';
+        ctx.fill();
+        ctx.strokeStyle = fill;
+        ctx.lineWidth = 2 / z;
+        ctx.stroke();
+        ctx.strokeStyle = COLORS.hpLow;
+        ctx.lineWidth = 2.2 / z;
+        ctx.beginPath();
+        ctx.moveTo(p.x - r * 0.55, p.y);
+        ctx.lineTo(p.x + r * 0.55, p.y);
+        ctx.moveTo(p.x, p.y - r * 0.55);
+        ctx.lineTo(p.x, p.y + r * 0.55);
+        ctx.stroke();
+        break;
+      }
+      case 'hellion': {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(e.facing);
+        ctx.beginPath();
+        ctx.moveTo(r * 1.25, 0);
+        ctx.lineTo(-r * 0.9, -r * 0.7);
+        ctx.lineTo(-r * 0.6, 0);
+        ctx.lineTo(-r * 0.9, r * 0.7);
+        ctx.closePath();
+        ctx.fillStyle = dark;
+        ctx.fill();
+        ctx.strokeStyle = fill;
+        ctx.lineWidth = 2 / z;
+        ctx.stroke();
+        circle(ctx, r * 0.3, 0, r * 0.2);
+        ctx.fillStyle = '#ffb15a';
+        ctx.fill();
+        ctx.restore();
+        break;
+      }
+      case 'zergling': {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(e.facing);
+        ctx.beginPath();
+        ctx.moveTo(r * 1.3, 0);
+        ctx.lineTo(-r, -r * 0.9);
+        ctx.lineTo(-r * 0.4, 0);
+        ctx.lineTo(-r, r * 0.9);
+        ctx.closePath();
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.restore();
+        break;
+      }
+      case 'baneling': {
+        circle(ctx, p.x, p.y, r);
+        ctx.fillStyle = '#9be36b';
+        ctx.fill();
+        ctx.strokeStyle = fill;
+        ctx.lineWidth = 2 / z;
+        ctx.stroke();
+        break;
+      }
       case 'marine':
       case 'marauder': {
         const heavy = e.def === 'marauder';
@@ -416,6 +550,20 @@ export class Renderer {
         break;
       }
       case 'siegeTank': {
+        const deployed = e.sieged || e.deploying > 0;
+        if (deployed) {
+          // Outriggers.
+          ctx.strokeStyle = fill;
+          ctx.lineWidth = 3 / z;
+          ctx.globalAlpha = e.sieged ? 1 : 0.5;
+          ctx.beginPath();
+          for (const a of [0.8, 2.35, 3.9, 5.5]) {
+            ctx.moveTo(p.x + Math.cos(a) * r * 0.6, p.y + Math.sin(a) * r * 0.6);
+            ctx.lineTo(p.x + Math.cos(a) * r * 1.5, p.y + Math.sin(a) * r * 1.5);
+          }
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate(e.facing);
@@ -431,11 +579,11 @@ export class Renderer {
         ctx.fillRect(-r * 1.1, -r * 0.85, r * 2.2, r * 0.3);
         ctx.fillRect(-r * 1.1, r * 0.55, r * 2.2, r * 0.3);
         ctx.globalAlpha = 1;
-        // Turret.
-        ctx.lineWidth = 4 / z;
+        // Turret (the siege cannon is longer).
+        ctx.lineWidth = (e.sieged ? 5 : 4) / z;
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        ctx.lineTo(r * 1.6, 0);
+        ctx.lineTo(r * (e.sieged ? 2.1 : 1.6), 0);
         ctx.stroke();
         circle(ctx, 0, 0, r * 0.45);
         ctx.fillStyle = fill;
@@ -443,7 +591,9 @@ export class Renderer {
         ctx.restore();
         break;
       }
-      case 'banshee': {
+      case 'banshee':
+      case 'viking':
+      case 'medivac': {
         // Shadow on the ground, hull drawn "above" it.
         ctx.fillStyle = 'rgba(0,0,0,0.35)';
         ctx.beginPath();
@@ -454,19 +604,40 @@ export class Renderer {
         ctx.translate(p.x, hy);
         ctx.rotate(e.facing);
         ctx.beginPath();
-        ctx.moveTo(r * 1.3, 0);
-        ctx.lineTo(-r * 0.9, -r * 0.85);
-        ctx.lineTo(-r * 0.45, 0);
-        ctx.lineTo(-r * 0.9, r * 0.85);
+        if (e.def === 'banshee') {
+          ctx.moveTo(r * 1.3, 0);
+          ctx.lineTo(-r * 0.9, -r * 0.85);
+          ctx.lineTo(-r * 0.45, 0);
+          ctx.lineTo(-r * 0.9, r * 0.85);
+        } else if (e.def === 'viking') {
+          ctx.moveTo(r * 1.2, 0);
+          ctx.lineTo(-r * 0.2, -r * 1.1);
+          ctx.lineTo(-r * 0.8, -r * 1.1);
+          ctx.lineTo(-r * 0.5, 0);
+          ctx.lineTo(-r * 0.8, r * 1.1);
+          ctx.lineTo(-r * 0.2, r * 1.1);
+        } else {
+          ctx.roundRect(-r * 1.1, -r * 0.6, r * 2.2, r * 1.2, r * 0.6);
+        }
         ctx.closePath();
         ctx.fillStyle = dark;
         ctx.fill();
         ctx.strokeStyle = fill;
         ctx.lineWidth = 2 / z;
         ctx.stroke();
-        circle(ctx, r * 0.2, 0, r * 0.22);
-        ctx.fillStyle = fill;
-        ctx.fill();
+        if (e.def === 'medivac') {
+          ctx.strokeStyle = COLORS.hpLow;
+          ctx.beginPath();
+          ctx.moveTo(-r * 0.35, 0);
+          ctx.lineTo(r * 0.35, 0);
+          ctx.moveTo(0, -r * 0.35);
+          ctx.lineTo(0, r * 0.35);
+          ctx.stroke();
+        } else {
+          circle(ctx, r * 0.2, 0, r * 0.22);
+          ctx.fillStyle = fill;
+          ctx.fill();
+        }
         ctx.restore();
         break;
       }
@@ -490,6 +661,21 @@ export class Renderer {
         ctx.fillStyle = fill;
         ctx.fill();
       }
+    }
+    // Status: stimmed (red glow), slowed (blue dashes).
+    if (e.stimmed > 0) {
+      circle(ctx, p.x, p.y, r + 0.12);
+      ctx.strokeStyle = 'rgba(255,90,70,0.85)';
+      ctx.lineWidth = 2 / z;
+      ctx.stroke();
+    }
+    if (e.slowed > 0) {
+      circle(ctx, p.x, p.y, r + 0.2);
+      ctx.setLineDash([0.12, 0.12]);
+      ctx.strokeStyle = 'rgba(120,180,255,0.9)';
+      ctx.lineWidth = 1.5 / z;
+      ctx.stroke();
+      ctx.setLineDash([]);
     }
   }
 
@@ -613,6 +799,24 @@ export class Renderer {
         ctx.stroke();
         circle(ctx, fx.x2, fx.y2, fx.heavy ? 0.22 : 0.12);
         ctx.fillStyle = ctx.strokeStyle;
+        ctx.fill();
+      } else if (fx.type === 'heal') {
+        const life = 0.3;
+        if (age > life) continue;
+        ctx.globalAlpha = 0.8 * (1 - age / life);
+        ctx.strokeStyle = COLORS.hpHigh;
+        ctx.lineWidth = 2.5 / z;
+        ctx.beginPath();
+        ctx.moveTo(fx.x1, fx.y1);
+        ctx.lineTo(fx.x2, fx.y2);
+        ctx.stroke();
+      } else if (fx.type === 'splash') {
+        const life = 0.35;
+        if (age > life) continue;
+        const t = age / life;
+        ctx.globalAlpha = 0.7 * (1 - t);
+        ctx.fillStyle = '#ffb15a';
+        circle(ctx, fx.x, fx.y, fx.radius * (0.5 + t * 0.5));
         ctx.fill();
       } else if (fx.type === 'death') {
         const life = 0.55;
@@ -784,7 +988,7 @@ export class Renderer {
   }
 }
 
-const SHORT: Partial<Record<DefId, string>> = { commandCenter: 'H', barracks: 'IT', factory: 'MF', starport: 'P' };
+const SHORT: Partial<Record<DefId, string>> = { commandCenter: 'CC', supplyDepot: 'SD', barracks: 'BR', factory: 'FA', starport: 'SP' };
 
 function circle(ctx: CanvasRenderingContext2D, x: number, y: number, r: number): void {
   ctx.beginPath();

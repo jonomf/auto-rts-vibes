@@ -3,6 +3,7 @@ import { Renderer } from './render/renderer';
 import { Input } from './input/input';
 import { Hud } from './ui/hud';
 import { Editor } from './ui/editor';
+import { MatchDialog } from './ui/match';
 
 const root = document.getElementById('app')!;
 const canvas = document.getElementById('view') as HTMLCanvasElement;
@@ -12,6 +13,7 @@ const renderer = new Renderer(canvas, game);
 const input = new Input(canvas, game);
 const hud = new Hud(root, game);
 const editor = new Editor(root, game);
+const match = new MatchDialog(root.querySelector('[data-match]')!, root.querySelector('[data-match-open]')!, game);
 
 // Start framed on the main base and its build area.
 const home = game.world.list((e) => e.def === 'commandCenter')[0];
@@ -40,6 +42,7 @@ function frame(now: number): void {
     hudVersion = game.uiVersion;
     hud.update();
     editor.update();
+    match.update();
   }
   requestAnimationFrame(frame);
 }

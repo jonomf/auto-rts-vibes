@@ -416,17 +416,38 @@ function runBuildings(ctx: Ctx): void {
     const rules = ctx.p.rules[b.def];
     // Keep every production lane busy (a Reactor gives two); nothing while an add-on is going on.
     if (!rules?.length || b.queue.length >= lanesOf(b) || buildingAddon(b)) continue;
+    // The build order's current step wants an add-on here: save up for it instead of training.
+    if (savingForAddonStep(ctx, b)) continue;
     for (const r of rules) {
       if (!r.on || (r.act.kind !== 'train' && r.act.kind !== 'addon')) continue;
       if (r.act.kind === 'addon' && (b.addon || b.queue.length > 0)) continue;
       if (!r.conds.every((c) => evalCond(ctx, c, b))) continue;
-      const done = r.act.kind === 'train' ? tryTrain(ctx, r.act.def, b) : tryAddon(ctx, r.act.def, b.def, b) === null;
-      if (done) {
+      if (r.act.kind === 'addon') {
+        if (tryAddon(ctx, r.act.def, b.def, b) === null) {
+          world.auto.fired[ruleKey(b.def, r)] = world.tick;
+          break;
+        }
+        // Can't afford it yet: wait for it rather than spending the stock on lower rules.
+        // (If there's no room for it at all, fall through.)
+        if (checkAddon(world, b, r.act.def, true).ok) break;
+        continue;
+      }
+      if (tryTrain(ctx, r.act.def, b)) {
         world.auto.fired[ruleKey(b.def, r)] = world.tick;
         break;
       }
     }
   }
+}
+
+/** Is the build order currently waiting to put an add-on on this building (the first eligible one)? */
+function savingForAddonStep(ctx: Ctx, b: Entity): boolean {
+  const s = ctx.p.order[ctx.world.auto.step];
+  if (!s || s.kind !== 'addon' || s.on !== b.def || b.addon) return false;
+  const first = ownBuildings(ctx, s.on)
+    .filter((x) => !x.addon && !buildingAddon(x))
+    .sort((x, y) => x.queue.length - y.queue.length || x.id - y.id)[0];
+  return first === b && checkAddon(ctx.world, b, s.def, true).ok;
 }
 
 export function rulesFor(p: Program, u: Entity): { scope: ScopeId; rule: Rule }[] {

@@ -1,0 +1,2440 @@
+{
+ "limitSeconds": 480,
+ "scenarios": {
+  "range": {
+   "id": "range",
+   "name": "Target range",
+   "blurb": "Inert dummies and a bunker that never shoot back.",
+   "hint": "Anything works. A place to test an economy."
+  },
+  "outpost": {
+   "id": "outpost",
+   "name": "Outpost",
+   "blurb": "Bunkers, a Missile Turret, a sieged tank and a bio squad around a Command Center.",
+   "hint": "A mixed army. Out-range the bunkers, or bring enough to trade."
+  },
+  "swarm": {
+   "id": "swarm",
+   "name": "Swarm",
+   "blurb": "Packs of Zerglings with Banelings: fast, light, many, and Banelings burst light units.",
+   "hint": "Splash and range: Hellions and sieged tanks. Massed Marines melt to Banelings; air is untouchable."
+  },
+  "armor": {
+   "id": "armor",
+   "name": "Armor line",
+   "blurb": "Sieged tanks and Marauders dug in behind bunkers.",
+   "hint": "Bonus vs armored (Marauders, tanks), or air: nothing here shoots up except the bunkers."
+  },
+  "air": {
+   "id": "air",
+   "name": "Air wing",
+   "blurb": "Banshees and Vikings over Missile Turrets.",
+   "hint": "Anti-air: Marines and Vikings. Tanks and Hellions can’t shoot up."
+  }
+ },
+ "rulesets": {
+  "classic": {
+   "id": "classic",
+   "name": "Classic",
+   "blurb": "Starcraft rules: hard supply cap, add-ons need room beside their building, siege and stim only when told.",
+   "supply": "hard",
+   "addons": "attached",
+   "abilities": "manual"
+  },
+  "streamlined": {
+   "id": "streamlined",
+   "name": "Streamlined",
+   "blurb": "Automation-friendly: soft supply cap (over-cap units train 3× slower), add-ons have no footprint, tanks siege and bio stims by themselves.",
+   "supply": "soft",
+   "addons": "inplace",
+   "abilities": "auto"
+  }
+ },
+ "presets": {
+  "starter": {
+   "name": "Starter",
+   "blurb": "A bit of everything"
+  },
+  "bio": {
+   "name": "Bio",
+   "blurb": "Marines, Marauders, Medics, stim"
+  },
+  "mech": {
+   "name": "Mech",
+   "blurb": "Siege Tanks and Hellions"
+  },
+  "air": {
+   "name": "Air",
+   "blurb": "Banshees and Vikings"
+  }
+ },
+ "forgetVariants": [
+  {
+   "id": "full",
+   "name": "Full program"
+  },
+  {
+   "id": "noSupply",
+   "name": "No supply rule"
+  },
+  {
+   "id": "noAbilities",
+   "name": "No siege / stim rules"
+  },
+  {
+   "id": "neither",
+   "name": "Neither"
+  }
+ ],
+ "logisticsVariants": [
+  {
+   "id": "h2-1",
+   "name": "Haul 2 + 1"
+  },
+  {
+   "id": "h3-2",
+   "name": "Haul 3 + 2"
+  },
+  {
+   "id": "h6-4",
+   "name": "Haul 6 + 4"
+  },
+  {
+   "id": "h10-6",
+   "name": "Haul 10 + 6"
+  },
+  {
+   "id": "needy",
+   "name": "Deliver to production (6 + 4)"
+  }
+ ],
+ "matrix": [
+  {
+   "preset": "starter",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 184.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 6845,
+   "supplyBlocked": 18,
+   "ccHoard": 1335,
+   "army": {
+    "marine": 7,
+    "marauder": 4,
+    "medic": 2,
+    "hellion": 5,
+    "medivac": 1,
+    "viking": 1
+   },
+   "offenseAt": 165.05
+  },
+  {
+   "preset": "starter",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 244.05,
+   "enemyLeft": 0,
+   "lostUnits": 25,
+   "lostValue": 2900,
+   "killedValue": 1125,
+   "gathered": 9665,
+   "supplyBlocked": 13,
+   "ccHoard": 1360,
+   "army": {
+    "marauder": 4,
+    "siegeTank": 3,
+    "medivac": 1,
+    "viking": 1,
+    "medic": 1
+   },
+   "offenseAt": 165.05
+  },
+  {
+   "preset": "starter",
+   "scenario": "swarm",
+   "rules": "classic",
+   "clear": 190.05,
+   "enemyLeft": 0,
+   "lostUnits": 3,
+   "lostValue": 200,
+   "killedValue": 0,
+   "gathered": 7090,
+   "supplyBlocked": 14,
+   "ccHoard": 1285,
+   "army": {
+    "marine": 5,
+    "marauder": 4,
+    "hellion": 5,
+    "medivac": 1,
+    "medic": 2,
+    "viking": 1,
+    "siegeTank": 1
+   },
+   "offenseAt": 165.05
+  },
+  {
+   "preset": "starter",
+   "scenario": "armor",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 4,
+   "lostUnits": 74,
+   "lostValue": 9550,
+   "killedValue": 500,
+   "gathered": 15000,
+   "supplyBlocked": 12,
+   "ccHoard": 15,
+   "army": {
+    "medivac": 1,
+    "viking": 8
+   },
+   "offenseAt": 165.05
+  },
+  {
+   "preset": "starter",
+   "scenario": "air",
+   "rules": "classic",
+   "clear": 189.05,
+   "enemyLeft": 0,
+   "lostUnits": 6,
+   "lostValue": 700,
+   "killedValue": 1425,
+   "gathered": 7070,
+   "supplyBlocked": 14,
+   "ccHoard": 1405,
+   "army": {
+    "marine": 7,
+    "marauder": 3,
+    "medic": 1,
+    "hellion": 2,
+    "viking": 1,
+    "siegeTank": 1
+   },
+   "offenseAt": 165.05
+  },
+  {
+   "preset": "bio",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 146.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 6980,
+   "supplyBlocked": 12,
+   "ccHoard": 1630,
+   "army": {
+    "marine": 25,
+    "medic": 4,
+    "marauder": 3
+   },
+   "offenseAt": 133.3
+  },
+  {
+   "preset": "bio",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 189.05,
+   "enemyLeft": 0,
+   "lostUnits": 39,
+   "lostValue": 2300,
+   "killedValue": 1125,
+   "gathered": 8765,
+   "supplyBlocked": 9,
+   "ccHoard": 1630,
+   "army": {
+    "marine": 24,
+    "medic": 4
+   },
+   "offenseAt": 133.3
+  },
+  {
+   "preset": "bio",
+   "scenario": "swarm",
+   "rules": "classic",
+   "clear": 151.05,
+   "enemyLeft": 0,
+   "lostUnits": 6,
+   "lostValue": 400,
+   "killedValue": 0,
+   "gathered": 7355,
+   "supplyBlocked": 9,
+   "ccHoard": 1845,
+   "army": {
+    "marine": 27,
+    "marauder": 3,
+    "medic": 1
+   },
+   "offenseAt": 133.3
+  },
+  {
+   "preset": "bio",
+   "scenario": "armor",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 5,
+   "lostUnits": 171,
+   "lostValue": 9625,
+   "killedValue": 500,
+   "gathered": 13000,
+   "supplyBlocked": 9,
+   "ccHoard": 650,
+   "army": {},
+   "offenseAt": 133.3
+  },
+  {
+   "preset": "bio",
+   "scenario": "air",
+   "rules": "classic",
+   "clear": 150.05,
+   "enemyLeft": 0,
+   "lostUnits": 2,
+   "lostValue": 100,
+   "killedValue": 1425,
+   "gathered": 7270,
+   "supplyBlocked": 12,
+   "ccHoard": 1660,
+   "army": {
+    "marine": 25,
+    "medic": 4,
+    "marauder": 3
+   },
+   "offenseAt": 133.3
+  },
+  {
+   "preset": "mech",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 189.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 6950,
+   "supplyBlocked": 3,
+   "ccHoard": 1100,
+   "army": {
+    "marine": 4,
+    "siegeTank": 4,
+    "hellion": 7
+   },
+   "offenseAt": 167.05
+  },
+  {
+   "preset": "mech",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 205.05,
+   "enemyLeft": 0,
+   "lostUnits": 11,
+   "lostValue": 850,
+   "killedValue": 1125,
+   "gathered": 7950,
+   "supplyBlocked": 3,
+   "ccHoard": 1355,
+   "army": {
+    "siegeTank": 5,
+    "marine": 4,
+    "hellion": 5
+   },
+   "offenseAt": 167.05
+  },
+  {
+   "preset": "mech",
+   "scenario": "swarm",
+   "rules": "classic",
+   "clear": 199.05,
+   "enemyLeft": 0,
+   "lostUnits": 2,
+   "lostValue": 100,
+   "killedValue": 0,
+   "gathered": 7550,
+   "supplyBlocked": 3,
+   "ccHoard": 1460,
+   "army": {
+    "marine": 4,
+    "siegeTank": 5,
+    "hellion": 8
+   },
+   "offenseAt": 167.05
+  },
+  {
+   "preset": "mech",
+   "scenario": "armor",
+   "rules": "classic",
+   "clear": 207.05,
+   "enemyLeft": 0,
+   "lostUnits": 13,
+   "lostValue": 1175,
+   "killedValue": 1325,
+   "gathered": 8065,
+   "supplyBlocked": 3,
+   "ccHoard": 1350,
+   "army": {
+    "siegeTank": 4,
+    "marine": 4,
+    "hellion": 5
+   },
+   "offenseAt": 167.05
+  },
+  {
+   "preset": "mech",
+   "scenario": "air",
+   "rules": "classic",
+   "clear": 235.05,
+   "enemyLeft": 0,
+   "lostUnits": 16,
+   "lostValue": 1650,
+   "killedValue": 1425,
+   "gathered": 9345,
+   "supplyBlocked": 3,
+   "ccHoard": 1530,
+   "army": {
+    "siegeTank": 5,
+    "marine": 4,
+    "hellion": 5
+   },
+   "offenseAt": 167.05
+  },
+  {
+   "preset": "air",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 236.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 8790,
+   "supplyBlocked": 1,
+   "ccHoard": 560,
+   "army": {
+    "marine": 2,
+    "banshee": 6,
+    "viking": 2,
+    "medivac": 8
+   },
+   "offenseAt": 214.05
+  },
+  {
+   "preset": "air",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 260.05,
+   "enemyLeft": 0,
+   "lostUnits": 13,
+   "lostValue": 2275,
+   "killedValue": 1125,
+   "gathered": 9860,
+   "supplyBlocked": 0,
+   "ccHoard": 550,
+   "army": {
+    "banshee": 5,
+    "viking": 2,
+    "medivac": 4,
+    "marine": 2
+   },
+   "offenseAt": 214.05
+  },
+  {
+   "preset": "air",
+   "scenario": "swarm",
+   "rules": "classic",
+   "clear": 250.05,
+   "enemyLeft": 0,
+   "lostUnits": 2,
+   "lostValue": 100,
+   "killedValue": 0,
+   "gathered": 9395,
+   "supplyBlocked": 0,
+   "ccHoard": 630,
+   "army": {
+    "banshee": 7,
+    "viking": 3,
+    "medivac": 8,
+    "marine": 2
+   },
+   "offenseAt": 214.05
+  },
+  {
+   "preset": "air",
+   "scenario": "armor",
+   "rules": "classic",
+   "clear": 248.05,
+   "enemyLeft": 0,
+   "lostUnits": 6,
+   "lostValue": 600,
+   "killedValue": 1325,
+   "gathered": 9465,
+   "supplyBlocked": 0,
+   "ccHoard": 885,
+   "army": {
+    "banshee": 6,
+    "viking": 3,
+    "medivac": 7,
+    "marine": 2
+   },
+   "offenseAt": 214.05
+  },
+  {
+   "preset": "air",
+   "scenario": "air",
+   "rules": "classic",
+   "clear": 245.05,
+   "enemyLeft": 0,
+   "lostUnits": 10,
+   "lostValue": 1500,
+   "killedValue": 1425,
+   "gathered": 9265,
+   "supplyBlocked": 0,
+   "ccHoard": 555,
+   "army": {
+    "banshee": 5,
+    "viking": 2,
+    "medivac": 6,
+    "marine": 1
+   },
+   "offenseAt": 214.05
+  },
+  {
+   "preset": "starter",
+   "scenario": "range",
+   "rules": "streamlined",
+   "clear": 185.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 6875,
+   "supplyBlocked": 0,
+   "ccHoard": 1250,
+   "army": {
+    "marine": 8,
+    "marauder": 4,
+    "medic": 2,
+    "hellion": 3,
+    "viking": 2,
+    "medivac": 1
+   },
+   "offenseAt": 168.55
+  },
+  {
+   "preset": "starter",
+   "scenario": "outpost",
+   "rules": "streamlined",
+   "clear": 254.05,
+   "enemyLeft": 0,
+   "lostUnits": 28,
+   "lostValue": 3125,
+   "killedValue": 1125,
+   "gathered": 10065,
+   "supplyBlocked": 0,
+   "ccHoard": 1295,
+   "army": {
+    "siegeTank": 4,
+    "marauder": 2,
+    "viking": 1,
+    "medivac": 1,
+    "medic": 1
+   },
+   "offenseAt": 168.55
+  },
+  {
+   "preset": "starter",
+   "scenario": "swarm",
+   "rules": "streamlined",
+   "clear": 192.05,
+   "enemyLeft": 0,
+   "lostUnits": 3,
+   "lostValue": 250,
+   "killedValue": 0,
+   "gathered": 7200,
+   "supplyBlocked": 0,
+   "ccHoard": 1385,
+   "army": {
+    "marine": 6,
+    "marauder": 4,
+    "viking": 2,
+    "hellion": 3,
+    "medivac": 1,
+    "medic": 2
+   },
+   "offenseAt": 168.55
+  },
+  {
+   "preset": "starter",
+   "scenario": "armor",
+   "rules": "streamlined",
+   "clear": 310.05,
+   "enemyLeft": 0,
+   "lostUnits": 41,
+   "lostValue": 5575,
+   "killedValue": 1325,
+   "gathered": 11725,
+   "supplyBlocked": 0,
+   "ccHoard": 1215,
+   "army": {
+    "medivac": 1,
+    "viking": 2,
+    "marauder": 3,
+    "siegeTank": 1,
+    "medic": 1
+   },
+   "offenseAt": 168.55
+  },
+  {
+   "preset": "starter",
+   "scenario": "air",
+   "rules": "streamlined",
+   "clear": 190.05,
+   "enemyLeft": 0,
+   "lostUnits": 6,
+   "lostValue": 825,
+   "killedValue": 1425,
+   "gathered": 7060,
+   "supplyBlocked": 0,
+   "ccHoard": 1325,
+   "army": {
+    "marine": 7,
+    "medic": 1,
+    "marauder": 4,
+    "hellion": 2,
+    "viking": 1
+   },
+   "offenseAt": 168.55
+  },
+  {
+   "preset": "bio",
+   "scenario": "range",
+   "rules": "streamlined",
+   "clear": 142.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 6625,
+   "supplyBlocked": 0,
+   "ccHoard": 1465,
+   "army": {
+    "marine": 23,
+    "medic": 4,
+    "marauder": 2
+   },
+   "offenseAt": 128.55
+  },
+  {
+   "preset": "bio",
+   "scenario": "outpost",
+   "rules": "streamlined",
+   "clear": 227.05,
+   "enemyLeft": 0,
+   "lostUnits": 72,
+   "lostValue": 4000,
+   "killedValue": 1125,
+   "gathered": 10010,
+   "supplyBlocked": 0,
+   "ccHoard": 1350,
+   "army": {
+    "medic": 4,
+    "marine": 20,
+    "marauder": 1
+   },
+   "offenseAt": 128.55
+  },
+  {
+   "preset": "bio",
+   "scenario": "swarm",
+   "rules": "streamlined",
+   "clear": 147.05,
+   "enemyLeft": 0,
+   "lostUnits": 6,
+   "lostValue": 400,
+   "killedValue": 0,
+   "gathered": 7040,
+   "supplyBlocked": 0,
+   "ccHoard": 1780,
+   "army": {
+    "marine": 25,
+    "marauder": 2,
+    "medic": 1
+   },
+   "offenseAt": 128.55
+  },
+  {
+   "preset": "bio",
+   "scenario": "armor",
+   "rules": "streamlined",
+   "clear": null,
+   "enemyLeft": 5,
+   "lostUnits": 176,
+   "lostValue": 9800,
+   "killedValue": 500,
+   "gathered": 13000,
+   "supplyBlocked": 0,
+   "ccHoard": 675,
+   "army": {},
+   "offenseAt": 128.55
+  },
+  {
+   "preset": "bio",
+   "scenario": "air",
+   "rules": "streamlined",
+   "clear": 147.05,
+   "enemyLeft": 0,
+   "lostUnits": 2,
+   "lostValue": 100,
+   "killedValue": 1425,
+   "gathered": 6965,
+   "supplyBlocked": 0,
+   "ccHoard": 1630,
+   "army": {
+    "marine": 25,
+    "medic": 4,
+    "marauder": 3
+   },
+   "offenseAt": 128.55
+  },
+  {
+   "preset": "mech",
+   "scenario": "range",
+   "rules": "streamlined",
+   "clear": 189.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 7075,
+   "supplyBlocked": 0,
+   "ccHoard": 1350,
+   "army": {
+    "marine": 4,
+    "siegeTank": 4,
+    "hellion": 6
+   },
+   "offenseAt": 167.05
+  },
+  {
+   "preset": "mech",
+   "scenario": "outpost",
+   "rules": "streamlined",
+   "clear": 216.05,
+   "enemyLeft": 0,
+   "lostUnits": 13,
+   "lostValue": 1175,
+   "killedValue": 1125,
+   "gathered": 8555,
+   "supplyBlocked": 0,
+   "ccHoard": 1495,
+   "army": {
+    "siegeTank": 4,
+    "marine": 4,
+    "hellion": 7
+   },
+   "offenseAt": 167.05
+  },
+  {
+   "preset": "mech",
+   "scenario": "swarm",
+   "rules": "streamlined",
+   "clear": 202.05,
+   "enemyLeft": 0,
+   "lostUnits": 1,
+   "lostValue": 50,
+   "killedValue": 0,
+   "gathered": 7690,
+   "supplyBlocked": 0,
+   "ccHoard": 1455,
+   "army": {
+    "marine": 4,
+    "siegeTank": 4,
+    "hellion": 8
+   },
+   "offenseAt": 167.05
+  },
+  {
+   "preset": "mech",
+   "scenario": "armor",
+   "rules": "streamlined",
+   "clear": 207.05,
+   "enemyLeft": 0,
+   "lostUnits": 13,
+   "lostValue": 1175,
+   "killedValue": 1325,
+   "gathered": 8065,
+   "supplyBlocked": 0,
+   "ccHoard": 1350,
+   "army": {
+    "siegeTank": 4,
+    "marine": 4,
+    "hellion": 5
+   },
+   "offenseAt": 167.05
+  },
+  {
+   "preset": "mech",
+   "scenario": "air",
+   "rules": "streamlined",
+   "clear": 239.05,
+   "enemyLeft": 0,
+   "lostUnits": 16,
+   "lostValue": 1200,
+   "killedValue": 1425,
+   "gathered": 9485,
+   "supplyBlocked": 0,
+   "ccHoard": 1510,
+   "army": {
+    "siegeTank": 8,
+    "marine": 4,
+    "hellion": 4
+   },
+   "offenseAt": 167.05
+  },
+  {
+   "preset": "air",
+   "scenario": "range",
+   "rules": "streamlined",
+   "clear": 226.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 8310,
+   "supplyBlocked": 0,
+   "ccHoard": 715,
+   "army": {
+    "marine": 2,
+    "banshee": 6,
+    "viking": 3,
+    "medivac": 5
+   },
+   "offenseAt": 204.05
+  },
+  {
+   "preset": "air",
+   "scenario": "outpost",
+   "rules": "streamlined",
+   "clear": 285.05,
+   "enemyLeft": 0,
+   "lostUnits": 20,
+   "lostValue": 3775,
+   "killedValue": 1125,
+   "gathered": 11000,
+   "supplyBlocked": 0,
+   "ccHoard": 690,
+   "army": {
+    "marine": 2,
+    "medivac": 3,
+    "banshee": 3,
+    "viking": 3
+   },
+   "offenseAt": 204.05
+  },
+  {
+   "preset": "air",
+   "scenario": "swarm",
+   "rules": "streamlined",
+   "clear": 241.05,
+   "enemyLeft": 0,
+   "lostUnits": 2,
+   "lostValue": 100,
+   "killedValue": 0,
+   "gathered": 8985,
+   "supplyBlocked": 0,
+   "ccHoard": 765,
+   "army": {
+    "banshee": 7,
+    "viking": 3,
+    "medivac": 7,
+    "marine": 2
+   },
+   "offenseAt": 204.05
+  },
+  {
+   "preset": "air",
+   "scenario": "armor",
+   "rules": "streamlined",
+   "clear": 240.05,
+   "enemyLeft": 0,
+   "lostUnits": 7,
+   "lostValue": 800,
+   "killedValue": 1325,
+   "gathered": 9085,
+   "supplyBlocked": 0,
+   "ccHoard": 720,
+   "army": {
+    "banshee": 6,
+    "viking": 4,
+    "medivac": 2,
+    "marine": 2
+   },
+   "offenseAt": 204.05
+  },
+  {
+   "preset": "air",
+   "scenario": "air",
+   "rules": "streamlined",
+   "clear": 249.05,
+   "enemyLeft": 0,
+   "lostUnits": 11,
+   "lostValue": 1950,
+   "killedValue": 1425,
+   "gathered": 9425,
+   "supplyBlocked": 0,
+   "ccHoard": 705,
+   "army": {
+    "viking": 3,
+    "banshee": 3,
+    "medivac": 4,
+    "marine": 2
+   },
+   "offenseAt": 204.05
+  }
+ ],
+ "forgetful": [
+  {
+   "preset": "starter",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 244.05,
+   "enemyLeft": 0,
+   "lostUnits": 25,
+   "lostValue": 2900,
+   "killedValue": 1125,
+   "gathered": 9665,
+   "supplyBlocked": 13,
+   "ccHoard": 1360,
+   "army": {
+    "marauder": 4,
+    "siegeTank": 3,
+    "medivac": 1,
+    "viking": 1,
+    "medic": 1
+   },
+   "offenseAt": 165.05,
+   "variant": "full"
+  },
+  {
+   "preset": "starter",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 12,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 15000,
+   "supplyBlocked": 379,
+   "ccHoard": 11600,
+   "army": {
+    "marine": 1,
+    "marauder": 1,
+    "medic": 1
+   },
+   "offenseAt": null,
+   "variant": "noSupply"
+  },
+  {
+   "preset": "starter",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 286.05,
+   "enemyLeft": 0,
+   "lostUnits": 36,
+   "lostValue": 4875,
+   "killedValue": 1125,
+   "gathered": 11250,
+   "supplyBlocked": 13,
+   "ccHoard": 1240,
+   "army": {
+    "marauder": 4,
+    "siegeTank": 1,
+    "medivac": 1,
+    "hellion": 2,
+    "viking": 1,
+    "medic": 1
+   },
+   "offenseAt": 165.05,
+   "variant": "noAbilities"
+  },
+  {
+   "preset": "starter",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 12,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 15000,
+   "supplyBlocked": 379,
+   "ccHoard": 11600,
+   "army": {
+    "marine": 1,
+    "marauder": 1,
+    "medic": 1
+   },
+   "offenseAt": null,
+   "variant": "neither"
+  },
+  {
+   "preset": "starter",
+   "scenario": "armor",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 4,
+   "lostUnits": 74,
+   "lostValue": 9550,
+   "killedValue": 500,
+   "gathered": 15000,
+   "supplyBlocked": 12,
+   "ccHoard": 15,
+   "army": {
+    "medivac": 1,
+    "viking": 8
+   },
+   "offenseAt": 165.05,
+   "variant": "full"
+  },
+  {
+   "preset": "starter",
+   "scenario": "armor",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 10,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 15000,
+   "supplyBlocked": 379,
+   "ccHoard": 11600,
+   "army": {
+    "marine": 1,
+    "marauder": 1,
+    "medic": 1
+   },
+   "offenseAt": null,
+   "variant": "noSupply"
+  },
+  {
+   "preset": "starter",
+   "scenario": "armor",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 4,
+   "lostUnits": 77,
+   "lostValue": 9700,
+   "killedValue": 500,
+   "gathered": 15000,
+   "supplyBlocked": 12,
+   "ccHoard": 40,
+   "army": {
+    "viking": 8,
+    "medivac": 1,
+    "marine": 1
+   },
+   "offenseAt": 165.05,
+   "variant": "noAbilities"
+  },
+  {
+   "preset": "starter",
+   "scenario": "armor",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 10,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 15000,
+   "supplyBlocked": 379,
+   "ccHoard": 11600,
+   "army": {
+    "marine": 1,
+    "marauder": 1,
+    "medic": 1
+   },
+   "offenseAt": null,
+   "variant": "neither"
+  },
+  {
+   "preset": "bio",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 189.05,
+   "enemyLeft": 0,
+   "lostUnits": 39,
+   "lostValue": 2300,
+   "killedValue": 1125,
+   "gathered": 8765,
+   "supplyBlocked": 9,
+   "ccHoard": 1630,
+   "army": {
+    "marine": 24,
+    "medic": 4
+   },
+   "offenseAt": 133.3,
+   "variant": "full"
+  },
+  {
+   "preset": "bio",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 12,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 13000,
+   "supplyBlocked": 389,
+   "ccHoard": 10350,
+   "army": {
+    "marine": 2,
+    "medic": 2
+   },
+   "offenseAt": null,
+   "variant": "noSupply"
+  },
+  {
+   "preset": "bio",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 184.05,
+   "enemyLeft": 0,
+   "lostUnits": 34,
+   "lostValue": 2050,
+   "killedValue": 1125,
+   "gathered": 8700,
+   "supplyBlocked": 9,
+   "ccHoard": 1615,
+   "army": {
+    "marine": 25,
+    "medic": 4
+   },
+   "offenseAt": 133.3,
+   "variant": "noAbilities"
+  },
+  {
+   "preset": "bio",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 12,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 13000,
+   "supplyBlocked": 389,
+   "ccHoard": 10350,
+   "army": {
+    "marine": 2,
+    "medic": 2
+   },
+   "offenseAt": null,
+   "variant": "neither"
+  },
+  {
+   "preset": "bio",
+   "scenario": "armor",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 5,
+   "lostUnits": 171,
+   "lostValue": 9625,
+   "killedValue": 500,
+   "gathered": 13000,
+   "supplyBlocked": 9,
+   "ccHoard": 650,
+   "army": {},
+   "offenseAt": 133.3,
+   "variant": "full"
+  },
+  {
+   "preset": "bio",
+   "scenario": "armor",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 10,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 13000,
+   "supplyBlocked": 389,
+   "ccHoard": 10350,
+   "army": {
+    "marine": 2,
+    "medic": 2
+   },
+   "offenseAt": null,
+   "variant": "noSupply"
+  },
+  {
+   "preset": "bio",
+   "scenario": "armor",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 5,
+   "lostUnits": 171,
+   "lostValue": 9625,
+   "killedValue": 500,
+   "gathered": 13000,
+   "supplyBlocked": 9,
+   "ccHoard": 650,
+   "army": {},
+   "offenseAt": 133.3,
+   "variant": "noAbilities"
+  },
+  {
+   "preset": "bio",
+   "scenario": "armor",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 10,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 13000,
+   "supplyBlocked": 389,
+   "ccHoard": 10350,
+   "army": {
+    "marine": 2,
+    "medic": 2
+   },
+   "offenseAt": null,
+   "variant": "neither"
+  },
+  {
+   "preset": "mech",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 205.05,
+   "enemyLeft": 0,
+   "lostUnits": 11,
+   "lostValue": 850,
+   "killedValue": 1125,
+   "gathered": 7950,
+   "supplyBlocked": 3,
+   "ccHoard": 1355,
+   "army": {
+    "siegeTank": 5,
+    "marine": 4,
+    "hellion": 5
+   },
+   "offenseAt": 167.05,
+   "variant": "full"
+  },
+  {
+   "preset": "mech",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 12,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 15000,
+   "supplyBlocked": 368,
+   "ccHoard": 11640,
+   "army": {
+    "marine": 3
+   },
+   "offenseAt": null,
+   "variant": "noSupply"
+  },
+  {
+   "preset": "mech",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 250.05,
+   "enemyLeft": 0,
+   "lostUnits": 27,
+   "lostValue": 3075,
+   "killedValue": 1125,
+   "gathered": 10385,
+   "supplyBlocked": 3,
+   "ccHoard": 1870,
+   "army": {
+    "marine": 4,
+    "hellion": 9,
+    "siegeTank": 2
+   },
+   "offenseAt": 167.05,
+   "variant": "noAbilities"
+  },
+  {
+   "preset": "mech",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 12,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 15000,
+   "supplyBlocked": 368,
+   "ccHoard": 11640,
+   "army": {
+    "marine": 3
+   },
+   "offenseAt": null,
+   "variant": "neither"
+  },
+  {
+   "preset": "mech",
+   "scenario": "armor",
+   "rules": "classic",
+   "clear": 207.05,
+   "enemyLeft": 0,
+   "lostUnits": 13,
+   "lostValue": 1175,
+   "killedValue": 1325,
+   "gathered": 8065,
+   "supplyBlocked": 3,
+   "ccHoard": 1350,
+   "army": {
+    "siegeTank": 4,
+    "marine": 4,
+    "hellion": 5
+   },
+   "offenseAt": 167.05,
+   "variant": "full"
+  },
+  {
+   "preset": "mech",
+   "scenario": "armor",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 10,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 15000,
+   "supplyBlocked": 368,
+   "ccHoard": 11640,
+   "army": {
+    "marine": 3
+   },
+   "offenseAt": null,
+   "variant": "noSupply"
+  },
+  {
+   "preset": "mech",
+   "scenario": "armor",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 4,
+   "lostUnits": 107,
+   "lostValue": 10375,
+   "killedValue": 500,
+   "gathered": 15000,
+   "supplyBlocked": 3,
+   "ccHoard": 1540,
+   "army": {},
+   "offenseAt": 167.05,
+   "variant": "noAbilities"
+  },
+  {
+   "preset": "mech",
+   "scenario": "armor",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 10,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 15000,
+   "supplyBlocked": 368,
+   "ccHoard": 11640,
+   "army": {
+    "marine": 3
+   },
+   "offenseAt": null,
+   "variant": "neither"
+  },
+  {
+   "preset": "starter",
+   "scenario": "outpost",
+   "rules": "streamlined",
+   "clear": 254.05,
+   "enemyLeft": 0,
+   "lostUnits": 28,
+   "lostValue": 3125,
+   "killedValue": 1125,
+   "gathered": 10065,
+   "supplyBlocked": 0,
+   "ccHoard": 1295,
+   "army": {
+    "siegeTank": 4,
+    "marauder": 2,
+    "viking": 1,
+    "medivac": 1,
+    "medic": 1
+   },
+   "offenseAt": 168.55,
+   "variant": "full"
+  },
+  {
+   "preset": "starter",
+   "scenario": "outpost",
+   "rules": "streamlined",
+   "clear": 287.05,
+   "enemyLeft": 0,
+   "lostUnits": 12,
+   "lostValue": 1450,
+   "killedValue": 1125,
+   "gathered": 12625,
+   "supplyBlocked": 0,
+   "ccHoard": 6125,
+   "army": {
+    "siegeTank": 3,
+    "marine": 1,
+    "viking": 1
+   },
+   "offenseAt": 246.3,
+   "variant": "noSupply"
+  },
+  {
+   "preset": "starter",
+   "scenario": "outpost",
+   "rules": "streamlined",
+   "clear": 265.05,
+   "enemyLeft": 0,
+   "lostUnits": 30,
+   "lostValue": 3525,
+   "killedValue": 1125,
+   "gathered": 10545,
+   "supplyBlocked": 0,
+   "ccHoard": 1410,
+   "army": {
+    "siegeTank": 3,
+    "viking": 2,
+    "marauder": 2,
+    "medivac": 1,
+    "medic": 1
+   },
+   "offenseAt": 168.55,
+   "variant": "noAbilities"
+  },
+  {
+   "preset": "starter",
+   "scenario": "outpost",
+   "rules": "streamlined",
+   "clear": 358.05,
+   "enemyLeft": 0,
+   "lostUnits": 17,
+   "lostValue": 2250,
+   "killedValue": 1125,
+   "gathered": 14675,
+   "supplyBlocked": 0,
+   "ccHoard": 6875,
+   "army": {
+    "siegeTank": 4,
+    "medivac": 1,
+    "marauder": 1,
+    "viking": 1
+   },
+   "offenseAt": 246.3,
+   "variant": "neither"
+  },
+  {
+   "preset": "starter",
+   "scenario": "armor",
+   "rules": "streamlined",
+   "clear": 310.05,
+   "enemyLeft": 0,
+   "lostUnits": 41,
+   "lostValue": 5575,
+   "killedValue": 1325,
+   "gathered": 11725,
+   "supplyBlocked": 0,
+   "ccHoard": 1215,
+   "army": {
+    "medivac": 1,
+    "viking": 2,
+    "marauder": 3,
+    "siegeTank": 1,
+    "medic": 1
+   },
+   "offenseAt": 168.55,
+   "variant": "full"
+  },
+  {
+   "preset": "starter",
+   "scenario": "armor",
+   "rules": "streamlined",
+   "clear": 417.05,
+   "enemyLeft": 0,
+   "lostUnits": 20,
+   "lostValue": 2950,
+   "killedValue": 1325,
+   "gathered": 15000,
+   "supplyBlocked": 0,
+   "ccHoard": 6475,
+   "army": {
+    "medivac": 1,
+    "viking": 5,
+    "siegeTank": 1,
+    "marauder": 1
+   },
+   "offenseAt": 246.3,
+   "variant": "noSupply"
+  },
+  {
+   "preset": "starter",
+   "scenario": "armor",
+   "rules": "streamlined",
+   "clear": 335.05,
+   "enemyLeft": 0,
+   "lostUnits": 44,
+   "lostValue": 5900,
+   "killedValue": 1325,
+   "gathered": 12250,
+   "supplyBlocked": 0,
+   "ccHoard": 1190,
+   "army": {
+    "siegeTank": 1,
+    "medivac": 1,
+    "viking": 3,
+    "marauder": 3,
+    "hellion": 2,
+    "medic": 1
+   },
+   "offenseAt": 168.55,
+   "variant": "noAbilities"
+  },
+  {
+   "preset": "starter",
+   "scenario": "armor",
+   "rules": "streamlined",
+   "clear": 356.05,
+   "enemyLeft": 0,
+   "lostUnits": 14,
+   "lostValue": 1650,
+   "killedValue": 1325,
+   "gathered": 14650,
+   "supplyBlocked": 0,
+   "ccHoard": 6925,
+   "army": {
+    "siegeTank": 3,
+    "medivac": 1,
+    "viking": 5,
+    "marauder": 1
+   },
+   "offenseAt": 246.3,
+   "variant": "neither"
+  },
+  {
+   "preset": "bio",
+   "scenario": "outpost",
+   "rules": "streamlined",
+   "clear": 227.05,
+   "enemyLeft": 0,
+   "lostUnits": 72,
+   "lostValue": 4000,
+   "killedValue": 1125,
+   "gathered": 10010,
+   "supplyBlocked": 0,
+   "ccHoard": 1350,
+   "army": {
+    "medic": 4,
+    "marine": 20,
+    "marauder": 1
+   },
+   "offenseAt": 128.55,
+   "variant": "full"
+  },
+  {
+   "preset": "bio",
+   "scenario": "outpost",
+   "rules": "streamlined",
+   "clear": null,
+   "enemyLeft": 5,
+   "lostUnits": 100,
+   "lostValue": 5450,
+   "killedValue": 450,
+   "gathered": 13000,
+   "supplyBlocked": 0,
+   "ccHoard": 4650,
+   "army": {
+    "medic": 1
+   },
+   "offenseAt": 181.8,
+   "variant": "noSupply"
+  },
+  {
+   "preset": "bio",
+   "scenario": "outpost",
+   "rules": "streamlined",
+   "clear": 227.05,
+   "enemyLeft": 0,
+   "lostUnits": 72,
+   "lostValue": 4000,
+   "killedValue": 1125,
+   "gathered": 10010,
+   "supplyBlocked": 0,
+   "ccHoard": 1350,
+   "army": {
+    "medic": 4,
+    "marine": 20,
+    "marauder": 1
+   },
+   "offenseAt": 128.55,
+   "variant": "noAbilities"
+  },
+  {
+   "preset": "bio",
+   "scenario": "outpost",
+   "rules": "streamlined",
+   "clear": null,
+   "enemyLeft": 5,
+   "lostUnits": 100,
+   "lostValue": 5450,
+   "killedValue": 450,
+   "gathered": 13000,
+   "supplyBlocked": 0,
+   "ccHoard": 4650,
+   "army": {
+    "medic": 1
+   },
+   "offenseAt": 181.8,
+   "variant": "neither"
+  },
+  {
+   "preset": "bio",
+   "scenario": "armor",
+   "rules": "streamlined",
+   "clear": null,
+   "enemyLeft": 5,
+   "lostUnits": 176,
+   "lostValue": 9800,
+   "killedValue": 500,
+   "gathered": 13000,
+   "supplyBlocked": 0,
+   "ccHoard": 675,
+   "army": {},
+   "offenseAt": 128.55,
+   "variant": "full"
+  },
+  {
+   "preset": "bio",
+   "scenario": "armor",
+   "rules": "streamlined",
+   "clear": null,
+   "enemyLeft": 6,
+   "lostUnits": 100,
+   "lostValue": 5450,
+   "killedValue": 500,
+   "gathered": 13000,
+   "supplyBlocked": 0,
+   "ccHoard": 4650,
+   "army": {
+    "medic": 1
+   },
+   "offenseAt": 181.8,
+   "variant": "noSupply"
+  },
+  {
+   "preset": "bio",
+   "scenario": "armor",
+   "rules": "streamlined",
+   "clear": null,
+   "enemyLeft": 5,
+   "lostUnits": 176,
+   "lostValue": 9800,
+   "killedValue": 500,
+   "gathered": 13000,
+   "supplyBlocked": 0,
+   "ccHoard": 675,
+   "army": {},
+   "offenseAt": 128.55,
+   "variant": "noAbilities"
+  },
+  {
+   "preset": "bio",
+   "scenario": "armor",
+   "rules": "streamlined",
+   "clear": null,
+   "enemyLeft": 6,
+   "lostUnits": 100,
+   "lostValue": 5450,
+   "killedValue": 500,
+   "gathered": 13000,
+   "supplyBlocked": 0,
+   "ccHoard": 4650,
+   "army": {
+    "medic": 1
+   },
+   "offenseAt": 181.8,
+   "variant": "neither"
+  },
+  {
+   "preset": "mech",
+   "scenario": "outpost",
+   "rules": "streamlined",
+   "clear": 216.05,
+   "enemyLeft": 0,
+   "lostUnits": 13,
+   "lostValue": 1175,
+   "killedValue": 1125,
+   "gathered": 8555,
+   "supplyBlocked": 0,
+   "ccHoard": 1495,
+   "army": {
+    "siegeTank": 4,
+    "marine": 4,
+    "hellion": 7
+   },
+   "offenseAt": 167.05,
+   "variant": "full"
+  },
+  {
+   "preset": "mech",
+   "scenario": "outpost",
+   "rules": "streamlined",
+   "clear": 315.05,
+   "enemyLeft": 0,
+   "lostUnits": 17,
+   "lostValue": 1475,
+   "killedValue": 1125,
+   "gathered": 13825,
+   "supplyBlocked": 0,
+   "ccHoard": 7215,
+   "army": {
+    "siegeTank": 3,
+    "hellion": 2,
+    "marine": 1
+   },
+   "offenseAt": 209.55,
+   "variant": "noSupply"
+  },
+  {
+   "preset": "mech",
+   "scenario": "outpost",
+   "rules": "streamlined",
+   "clear": 220.05,
+   "enemyLeft": 0,
+   "lostUnits": 16,
+   "lostValue": 1250,
+   "killedValue": 1125,
+   "gathered": 8705,
+   "supplyBlocked": 0,
+   "ccHoard": 1470,
+   "army": {
+    "siegeTank": 6,
+    "marine": 4,
+    "hellion": 5
+   },
+   "offenseAt": 167.05,
+   "variant": "noAbilities"
+  },
+  {
+   "preset": "mech",
+   "scenario": "outpost",
+   "rules": "streamlined",
+   "clear": 314.05,
+   "enemyLeft": 0,
+   "lostUnits": 17,
+   "lostValue": 1475,
+   "killedValue": 1125,
+   "gathered": 13825,
+   "supplyBlocked": 0,
+   "ccHoard": 7190,
+   "army": {
+    "siegeTank": 3,
+    "hellion": 2,
+    "marine": 1
+   },
+   "offenseAt": 209.55,
+   "variant": "neither"
+  },
+  {
+   "preset": "mech",
+   "scenario": "armor",
+   "rules": "streamlined",
+   "clear": 207.05,
+   "enemyLeft": 0,
+   "lostUnits": 13,
+   "lostValue": 1175,
+   "killedValue": 1325,
+   "gathered": 8065,
+   "supplyBlocked": 0,
+   "ccHoard": 1350,
+   "army": {
+    "siegeTank": 4,
+    "marine": 4,
+    "hellion": 5
+   },
+   "offenseAt": 167.05,
+   "variant": "full"
+  },
+  {
+   "preset": "mech",
+   "scenario": "armor",
+   "rules": "streamlined",
+   "clear": 303.05,
+   "enemyLeft": 0,
+   "lostUnits": 15,
+   "lostValue": 1725,
+   "killedValue": 1325,
+   "gathered": 13425,
+   "supplyBlocked": 0,
+   "ccHoard": 6840,
+   "army": {
+    "hellion": 4,
+    "marine": 3,
+    "siegeTank": 1
+   },
+   "offenseAt": 209.55,
+   "variant": "noSupply"
+  },
+  {
+   "preset": "mech",
+   "scenario": "armor",
+   "rules": "streamlined",
+   "clear": 213.05,
+   "enemyLeft": 0,
+   "lostUnits": 14,
+   "lostValue": 1450,
+   "killedValue": 1325,
+   "gathered": 8390,
+   "supplyBlocked": 0,
+   "ccHoard": 1535,
+   "army": {
+    "siegeTank": 3,
+    "marine": 4,
+    "hellion": 6
+   },
+   "offenseAt": 167.05,
+   "variant": "noAbilities"
+  },
+  {
+   "preset": "mech",
+   "scenario": "armor",
+   "rules": "streamlined",
+   "clear": 418.05,
+   "enemyLeft": 0,
+   "lostUnits": 31,
+   "lostValue": 3375,
+   "killedValue": 1325,
+   "gathered": 15000,
+   "supplyBlocked": 0,
+   "ccHoard": 6715,
+   "army": {
+    "siegeTank": 2,
+    "hellion": 4,
+    "marine": 3
+   },
+   "offenseAt": 209.55,
+   "variant": "neither"
+  }
+ ],
+ "logistics": [
+  {
+   "preset": "starter",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 168.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 9575,
+   "supplyBlocked": 0,
+   "ccHoard": 5365,
+   "army": {
+    "medic": 2,
+    "marine": 10,
+    "marauder": 2,
+    "hellion": 5
+   },
+   "offenseAt": 146.3,
+   "variant": "h2-1"
+  },
+  {
+   "preset": "starter",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 166.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 8675,
+   "supplyBlocked": 11,
+   "ccHoard": 3810,
+   "army": {
+    "marine": 6,
+    "marauder": 4,
+    "medic": 2,
+    "hellion": 5,
+    "viking": 1
+   },
+   "offenseAt": 146.05,
+   "variant": "h3-2"
+  },
+  {
+   "preset": "starter",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 184.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 6845,
+   "supplyBlocked": 18,
+   "ccHoard": 1335,
+   "army": {
+    "marine": 7,
+    "marauder": 4,
+    "medic": 2,
+    "hellion": 5,
+    "medivac": 1,
+    "viking": 1
+   },
+   "offenseAt": 165.05,
+   "variant": "h6-4"
+  },
+  {
+   "preset": "starter",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 256.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 7275,
+   "supplyBlocked": 76,
+   "ccHoard": 2275,
+   "army": {
+    "marine": 8,
+    "marauder": 4,
+    "medic": 2,
+    "hellion": 2,
+    "medivac": 1,
+    "siegeTank": 1
+   },
+   "offenseAt": 237.55,
+   "variant": "h10-6"
+  },
+  {
+   "preset": "starter",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 126.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 3355,
+   "supplyBlocked": 0,
+   "ccHoard": 1625,
+   "army": {
+    "marine": 16
+   },
+   "offenseAt": 106.55,
+   "variant": "needy"
+  },
+  {
+   "preset": "starter",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 3,
+   "lostUnits": 97,
+   "lostValue": 9425,
+   "killedValue": 450,
+   "gathered": 15000,
+   "supplyBlocked": 0,
+   "ccHoard": 2475,
+   "army": {
+    "hellion": 1,
+    "marine": 1,
+    "medivac": 1
+   },
+   "offenseAt": 146.3,
+   "variant": "h2-1"
+  },
+  {
+   "preset": "starter",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 372.05,
+   "enemyLeft": 0,
+   "lostUnits": 66,
+   "lostValue": 8050,
+   "killedValue": 1125,
+   "gathered": 15000,
+   "supplyBlocked": 5,
+   "ccHoard": 1990,
+   "army": {
+    "viking": 2,
+    "marauder": 4,
+    "marine": 1,
+    "medivac": 1,
+    "hellion": 2,
+    "siegeTank": 1
+   },
+   "offenseAt": 146.05,
+   "variant": "h3-2"
+  },
+  {
+   "preset": "starter",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 244.05,
+   "enemyLeft": 0,
+   "lostUnits": 25,
+   "lostValue": 2900,
+   "killedValue": 1125,
+   "gathered": 9665,
+   "supplyBlocked": 13,
+   "ccHoard": 1360,
+   "army": {
+    "marauder": 4,
+    "siegeTank": 3,
+    "medivac": 1,
+    "viking": 1,
+    "medic": 1
+   },
+   "offenseAt": 165.05,
+   "variant": "h6-4"
+  },
+  {
+   "preset": "starter",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 348.05,
+   "enemyLeft": 0,
+   "lostUnits": 27,
+   "lostValue": 3025,
+   "killedValue": 1125,
+   "gathered": 11000,
+   "supplyBlocked": 64,
+   "ccHoard": 2045,
+   "army": {
+    "siegeTank": 3,
+    "marauder": 4,
+    "medivac": 1,
+    "viking": 1
+   },
+   "offenseAt": 237.55,
+   "variant": "h10-6"
+  },
+  {
+   "preset": "starter",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 445.05,
+   "enemyLeft": 0,
+   "lostUnits": 63,
+   "lostValue": 6550,
+   "killedValue": 1125,
+   "gathered": 12650,
+   "supplyBlocked": 2,
+   "ccHoard": 915,
+   "army": {
+    "siegeTank": 3,
+    "viking": 2,
+    "marauder": 4,
+    "medivac": 1
+   },
+   "offenseAt": 106.55,
+   "variant": "needy"
+  },
+  {
+   "preset": "mech",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 184.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 10205,
+   "supplyBlocked": 0,
+   "ccHoard": 5925,
+   "army": {
+    "marine": 4,
+    "hellion": 11
+   },
+   "offenseAt": 154.8,
+   "variant": "h2-1"
+  },
+  {
+   "preset": "mech",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 169.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 9110,
+   "supplyBlocked": 4,
+   "ccHoard": 4360,
+   "army": {
+    "marine": 4,
+    "hellion": 10,
+    "siegeTank": 1
+   },
+   "offenseAt": 141.8,
+   "variant": "h3-2"
+  },
+  {
+   "preset": "mech",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 189.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 6950,
+   "supplyBlocked": 3,
+   "ccHoard": 1100,
+   "army": {
+    "marine": 4,
+    "siegeTank": 4,
+    "hellion": 7
+   },
+   "offenseAt": 167.05,
+   "variant": "h6-4"
+  },
+  {
+   "preset": "mech",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 232.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 7095,
+   "supplyBlocked": 38,
+   "ccHoard": 1965,
+   "army": {
+    "marine": 4,
+    "siegeTank": 4,
+    "hellion": 4
+   },
+   "offenseAt": 210.8,
+   "variant": "h10-6"
+  },
+  {
+   "preset": "mech",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 289.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 6775,
+   "supplyBlocked": 0,
+   "ccHoard": 3185,
+   "army": {
+    "marine": 4,
+    "hellion": 10
+   },
+   "offenseAt": 259.3,
+   "variant": "needy"
+  },
+  {
+   "preset": "mech",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": null,
+   "enemyLeft": 5,
+   "lostUnits": 101,
+   "lostValue": 7650,
+   "killedValue": 450,
+   "gathered": 15000,
+   "supplyBlocked": 0,
+   "ccHoard": 4105,
+   "army": {
+    "marine": 1,
+    "hellion": 2
+   },
+   "offenseAt": 154.8,
+   "variant": "h2-1"
+  },
+  {
+   "preset": "mech",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 226.05,
+   "enemyLeft": 0,
+   "lostUnits": 27,
+   "lostValue": 2150,
+   "killedValue": 1125,
+   "gathered": 11335,
+   "supplyBlocked": 4,
+   "ccHoard": 4540,
+   "army": {
+    "siegeTank": 1,
+    "hellion": 8,
+    "marine": 4
+   },
+   "offenseAt": 141.8,
+   "variant": "h3-2"
+  },
+  {
+   "preset": "mech",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 205.05,
+   "enemyLeft": 0,
+   "lostUnits": 11,
+   "lostValue": 850,
+   "killedValue": 1125,
+   "gathered": 7950,
+   "supplyBlocked": 3,
+   "ccHoard": 1355,
+   "army": {
+    "siegeTank": 5,
+    "marine": 4,
+    "hellion": 5
+   },
+   "offenseAt": 167.05,
+   "variant": "h6-4"
+  },
+  {
+   "preset": "mech",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 243.05,
+   "enemyLeft": 0,
+   "lostUnits": 7,
+   "lostValue": 500,
+   "killedValue": 1125,
+   "gathered": 7550,
+   "supplyBlocked": 25,
+   "ccHoard": 1795,
+   "army": {
+    "siegeTank": 5,
+    "hellion": 1,
+    "marine": 4
+   },
+   "offenseAt": 210.8,
+   "variant": "h10-6"
+  },
+  {
+   "preset": "mech",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 438.05,
+   "enemyLeft": 0,
+   "lostUnits": 62,
+   "lostValue": 4850,
+   "killedValue": 1125,
+   "gathered": 13050,
+   "supplyBlocked": 2,
+   "ccHoard": 2795,
+   "army": {
+    "siegeTank": 3,
+    "marine": 4,
+    "hellion": 7
+   },
+   "offenseAt": 259.3,
+   "variant": "needy"
+  },
+  {
+   "preset": "bio",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 122.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 7595,
+   "supplyBlocked": 5,
+   "ccHoard": 3375,
+   "army": {
+    "marine": 23,
+    "medic": 4
+   },
+   "offenseAt": 107.3,
+   "variant": "h2-1"
+  },
+  {
+   "preset": "bio",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 125.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 7115,
+   "supplyBlocked": 10,
+   "ccHoard": 2355,
+   "army": {
+    "medic": 4,
+    "marine": 27,
+    "marauder": 2
+   },
+   "offenseAt": 112.3,
+   "variant": "h3-2"
+  },
+  {
+   "preset": "bio",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 146.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 6980,
+   "supplyBlocked": 12,
+   "ccHoard": 1630,
+   "army": {
+    "marine": 25,
+    "medic": 4,
+    "marauder": 3
+   },
+   "offenseAt": 133.3,
+   "variant": "h6-4"
+  },
+  {
+   "preset": "bio",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 167.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 7505,
+   "supplyBlocked": 7,
+   "ccHoard": 2310,
+   "army": {
+    "medic": 4,
+    "marine": 26,
+    "marauder": 2
+   },
+   "offenseAt": 151.55,
+   "variant": "h10-6"
+  },
+  {
+   "preset": "bio",
+   "scenario": "range",
+   "rules": "classic",
+   "clear": 144.05,
+   "enemyLeft": 0,
+   "lostUnits": 0,
+   "lostValue": 0,
+   "killedValue": 0,
+   "gathered": 3725,
+   "supplyBlocked": 0,
+   "ccHoard": 445,
+   "army": {
+    "marine": 22,
+    "medic": 4
+   },
+   "offenseAt": 130.55,
+   "variant": "needy"
+  },
+  {
+   "preset": "bio",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 287.05,
+   "enemyLeft": 0,
+   "lostUnits": 115,
+   "lostValue": 6250,
+   "killedValue": 1125,
+   "gathered": 13000,
+   "supplyBlocked": 5,
+   "ccHoard": 2840,
+   "army": {
+    "medic": 4,
+    "marine": 22
+   },
+   "offenseAt": 107.3,
+   "variant": "h2-1"
+  },
+  {
+   "preset": "bio",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 187.05,
+   "enemyLeft": 0,
+   "lostUnits": 52,
+   "lostValue": 2950,
+   "killedValue": 1125,
+   "gathered": 9450,
+   "supplyBlocked": 6,
+   "ccHoard": 1615,
+   "army": {
+    "marine": 24,
+    "medic": 4
+   },
+   "offenseAt": 112.3,
+   "variant": "h3-2"
+  },
+  {
+   "preset": "bio",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 189.05,
+   "enemyLeft": 0,
+   "lostUnits": 39,
+   "lostValue": 2300,
+   "killedValue": 1125,
+   "gathered": 8765,
+   "supplyBlocked": 9,
+   "ccHoard": 1630,
+   "army": {
+    "marine": 24,
+    "medic": 4
+   },
+   "offenseAt": 133.3,
+   "variant": "h6-4"
+  },
+  {
+   "preset": "bio",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 272.05,
+   "enemyLeft": 0,
+   "lostUnits": 88,
+   "lostValue": 4800,
+   "killedValue": 1125,
+   "gathered": 10660,
+   "supplyBlocked": 7,
+   "ccHoard": 1050,
+   "army": {
+    "marine": 23,
+    "medic": 4,
+    "marauder": 1
+   },
+   "offenseAt": 151.55,
+   "variant": "h10-6"
+  },
+  {
+   "preset": "bio",
+   "scenario": "outpost",
+   "rules": "classic",
+   "clear": 390.05,
+   "enemyLeft": 0,
+   "lostUnits": 106,
+   "lostValue": 5975,
+   "killedValue": 1125,
+   "gathered": 9975,
+   "supplyBlocked": 0,
+   "ccHoard": 940,
+   "army": {
+    "medic": 4,
+    "marine": 18
+   },
+   "offenseAt": 130.55,
+   "variant": "needy"
+  }
+ ]
+}

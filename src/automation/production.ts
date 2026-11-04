@@ -6,16 +6,16 @@
  *   unit X always      <=>  rule in X's building:  always → train X
  *   building B keep N  <=>  Base rule:             if count of B < N → build B
  */
-import { DEFS, type DefId } from '../sim/defs';
+import { DEFS, type AddonId, type DefId } from '../sim/defs';
 import { newId } from './blocks';
 import type { Program, Rule, ScopeId, Step } from './types';
 
 export type Keep = number | 'always' | null;
 
 /** Buildings in tech order, each with the units it trains. */
-export const TECH: { building: DefId; units: DefId[] }[] = (['commandCenter', 'barracks', 'factory', 'starport'] as DefId[]).map(
-  (building) => ({ building, units: [...(DEFS[building].trains ?? [])] }),
-);
+export const TECH: { building: DefId; units: DefId[] }[] = (
+  ['commandCenter', 'supplyDepot', 'refinery', 'barracks', 'factory', 'starport'] as DefId[]
+).map((building) => ({ building, units: [...(DEFS[building].trains ?? [])] }));
 
 export const isBuildingDef = (def: DefId) => DEFS[def].category === 'building';
 
@@ -27,6 +27,9 @@ export function trainerOf(unit: DefId): DefId {
 /** Where a def's keep rule lives. */
 export const keepScope = (def: DefId): ScopeId => (isBuildingDef(def) ? 'base' : trainerOf(def));
 
+/** Supply Depots are kept as a supply buffer ("supply left < N → build") rather than a count. */
+export const isSupplyBuffer = (def: DefId) => def === 'supplyDepot';
+
 function isKeepRule(rule: Rule, def: DefId): Keep | undefined {
   const act = rule.act;
   const kind = isBuildingDef(def) ? 'build' : 'train';
@@ -34,6 +37,7 @@ function isKeepRule(rule: Rule, def: DefId): Keep | undefined {
   if (rule.conds.length === 0) return kind === 'train' ? 'always' : undefined;
   if (rule.conds.length !== 1) return undefined;
   const c = rule.conds[0];
+  if (isSupplyBuffer(def)) return c.kind === 'supply' && c.op === '<' ? c.n : undefined;
   if (c.kind === 'count' && c.what === def && c.op === '<') return c.n;
   return undefined;
 }
@@ -61,7 +65,12 @@ export function setKeep(p: Program, def: DefId, value: Keep): void {
     return;
   }
   if (value === 'always' && isBuildingDef(def)) value = 1;
-  const conds: Rule['conds'] = value === 'always' ? [] : [{ kind: 'count', what: def, op: '<', n: value }];
+  const conds: Rule['conds'] =
+    value === 'always'
+      ? []
+      : isSupplyBuffer(def)
+        ? [{ kind: 'supply', op: '<', n: value }]
+        : [{ kind: 'count', what: def, op: '<', n: value }];
   if (found) {
     found.rule.conds = conds;
     found.rule.on = true;
@@ -90,6 +99,34 @@ export function stepFor(p: Program, def: DefId): Step {
 }
 
 export const KEEP_OPTIONS = (def: DefId): Keep[] =>
-  isBuildingDef(def) ? [null, 1, 2, 3, 4, 5, 6] : [null, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 30, 40, 'always'];
+  isSupplyBuffer(def)
+    ? [null, 2, 3, 4, 5, 6, 8, 10, 12]
+    : isBuildingDef(def)
+      ? [null, 1, 2, 3, 4, 5, 6]
+      : [null, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 30, 40, 'always'];
 
-export const keepLabel = (k: Keep): string => (k === null ? 'off' : k === 'always' ? 'always' : `keep ${k}`);
+export const keepLabel = (k: Keep, def?: DefId): string =>
+  k === null ? 'off' : k === 'always' ? 'always' : def && isSupplyBuffer(def) ? `supply < ${k}` : `keep ${k}`;
+
+// ---- Add-ons: one rule at the top of the building's list ------------------------------------
+
+/** The rule that gives every building of this type an add-on: "always → build add-on X". */
+export function findAddonRule(p: Program, building: DefId): { rule: Rule; index: number } | undefined {
+  const list = p.rules[building] ?? [];
+  const index = list.findIndex((r) => r.act.kind === 'addon' && r.conds.length === 0 && r.on);
+  return index >= 0 ? { rule: list[index], index } : undefined;
+}
+
+export const getAddon = (p: Program, building: DefId): AddonId | null => {
+  const f = findAddonRule(p, building);
+  return f && f.rule.act.kind === 'addon' ? f.rule.act.def : null;
+};
+
+/** Set (or clear) the add-on every building of this type should get. It goes first, before training. */
+export function setAddon(p: Program, building: DefId, addon: AddonId | null): void {
+  const list = (p.rules[building] ??= []);
+  const f = findAddonRule(p, building);
+  if (f) list.splice(f.index, 1);
+  if (addon) list.unshift({ id: newId(), on: true, max: null, conds: [], act: { kind: 'addon', def: addon } });
+  if (list.length === 0) delete p.rules[building];
+}

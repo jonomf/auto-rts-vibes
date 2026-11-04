@@ -3,7 +3,7 @@
  * Mirrors the Unity GameAction ScriptableObjects (MoveAction, ShowMenu, CreateBuilding, CreateUnit).
  */
 import { DEFS, costOf, formatCost, type DefId } from '../sim/defs';
-import { canAttack, checkTrain, isBuilding, isGatherer, isUnit, missingRequirement } from '../sim/actions';
+import { canAttack, checkAddon, checkTrain, isBuilding, isGatherer, isUnit, missingRequirement } from '../sim/actions';
 import { PLAYER, type Entity } from '../sim/types';
 import type { Game } from '../game';
 import { scopeOfEntity } from './editor';
@@ -23,7 +23,8 @@ export type UiAction = {
 };
 
 const TRAIN_KEYS = ['Q', 'W', 'E', 'R'];
-const BUILD_KEYS = ['Q', 'W', 'E', 'R'];
+const BUILD_KEYS = ['Q', 'W', 'E', 'R', 'T', 'Y'];
+const ADDON_KEYS = ['Z', 'X'];
 
 export const ownControllable = (e: Entity) => e.team === PLAYER && !DEFS[e.def].inert;
 
@@ -101,6 +102,28 @@ function unitCommands(game: Game, units: Entity[], gatherers: Entity[]): UiActio
         game.uiVersion++;
       },
     });
+  const tanks = units.filter((u) => DEFS[u.def].siege);
+  if (tanks.length) {
+    const sieged = tanks.every((t) => t.sieged);
+    out.push({
+      id: 'siege',
+      label: sieged ? 'Pack up' : 'Siege',
+      hotkey: 'E',
+      icon: 'siege',
+      active: sieged,
+      run: () => game.issue({ type: 'siege', ids: tanks.map((t) => t.id), on: !sieged }),
+    });
+  }
+  const stimmers = units.filter((u) => DEFS[u.def].stim);
+  if (stimmers.length)
+    out.push({
+      id: 'stim',
+      label: 'Stim',
+      hotkey: 'T',
+      icon: 'stim',
+      tooltip: 'Stimpack: −10 HP (Marauder −20) for 8s of 50% faster moving and shooting',
+      run: () => game.issue({ type: 'stim', ids: stimmers.map((u) => u.id) }),
+    });
   if (gatherers.length > 0)
     out.push({
       id: 'build',
@@ -148,6 +171,28 @@ function buildMenu(game: Game, builder: Entity): UiAction[] {
 }
 
 function trainCommands(game: Game, buildings: Entity[]): UiAction[] {
+  return [...trainButtons(game, buildings), ...addonButtons(game, buildings)];
+}
+
+function addonButtons(game: Game, buildings: Entity[]): UiAction[] {
+  const addons = DEFS[buildings[0].def].addons ?? [];
+  return addons.map((def, i) => {
+    const target = buildings.find((b) => checkAddon(game.world, b, def).ok);
+    const reason = target ? undefined : (checkAddon(game.world, buildings[0], def) as { reason: string }).reason;
+    return {
+      id: `addon:${def}`,
+      label: DEFS[def].name,
+      hotkey: ADDON_KEYS[i] ?? '',
+      detail: formatCost(costOf(def)),
+      disabled: reason,
+      tooltip: `${DEFS[def].name} · ${formatCost(costOf(def))} · ${DEFS[def].buildTime}s · ${def === 'techLab' ? 'unlocks advanced units' : 'trains two at once'}`,
+      icon: def,
+      run: () => game.issue({ type: 'addon', buildingId: (target ?? buildings[0]).id, def }),
+    };
+  });
+}
+
+function trainButtons(game: Game, buildings: Entity[]): UiAction[] {
   const trains = DEFS[buildings[0].def].trains ?? [];
   return trains.map((def, i) => {
     // Prefer the building that can afford it with the shortest queue.

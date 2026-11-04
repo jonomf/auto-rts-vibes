@@ -1,7 +1,9 @@
 import type { DefId } from './sim/defs';
 import { DT, World } from './sim/world';
 import { ENEMY, type Command, type CommandResult, type Entity, type EntityId } from './sim/types';
-import { createSandbox } from './sim/scenario';
+import { createScenario, SCENARIOS, type ScenarioId } from './sim/scenario';
+import { RULESETS, type Ruleset } from './sim/ruleset';
+import { PRESETS, type PresetId } from './automation/presets';
 import { Camera } from './render/camera';
 import type { WheelMode } from './input/input';
 import { emptyProgram, sanitizeProgram } from './automation/blocks';
@@ -21,7 +23,8 @@ export type Ping = { x: number; y: number; t: number; kind: 'move' | 'attack' | 
 export const SPEEDS = [0.25, 0.5, 1, 2, 4] as const;
 
 const PROGRAM_KEY = 'auto-rts.program.v1';
-const BEST_KEY = 'auto-rts.best.v1';
+const BEST_KEY = 'auto-rts.best.v2';
+const MATCH_KEY = 'auto-rts.match.v1';
 const WHEEL_KEY = 'auto-rts.wheel.v1';
 
 /** Commands that steer units or buildings directly (blocked in hands-off mode). */
@@ -60,6 +63,8 @@ export class Game {
   /** Game seconds when the last enemy fell, or null while targets remain. */
   won: number | null = null;
   best: number | null = null;
+  scenarioId: ScenarioId = 'range';
+  rulesetId: Ruleset['id'] = 'classic';
   targetsTotal = 0;
   /** Bumped whenever something the HUD shows may have changed outside the tick. */
   uiVersion = 0;
@@ -69,12 +74,52 @@ export class Game {
 
   constructor() {
     this.program = loadProgram();
-    this.best = loadNumber(BEST_KEY);
+    this.loadMatchSettings();
+    this.best = loadNumber(this.bestKey());
     this.world = this.newMatch();
   }
 
+  private bestKey(): string {
+    return `${BEST_KEY}.${this.scenarioId}.${this.rulesetId}`;
+  }
+
+  /** Match settings come from the URL (?rules=&scenario=&program=), else the last match played. */
+  private loadMatchSettings(): void {
+    try {
+      const saved = JSON.parse(localStorage.getItem(MATCH_KEY) ?? '{}');
+      if (saved.scenario in SCENARIOS) this.scenarioId = saved.scenario;
+      if (saved.rules in RULESETS) this.rulesetId = saved.rules;
+    } catch {
+      /* ignore */
+    }
+    const q = new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
+    const scen = q.get('scenario');
+    const rules = q.get('rules');
+    const prog = q.get('program');
+    if (scen && scen in SCENARIOS) this.scenarioId = scen as ScenarioId;
+    if (rules && rules in RULESETS) this.rulesetId = rules as Ruleset['id'];
+    if (prog && prog in PRESETS) {
+      Object.assign(this.program, PRESETS[prog as PresetId].make());
+      saveProgram(this.program);
+    }
+    if (q.get('hands') === 'on') this.handsOff = false;
+  }
+
+  /** Start a new match with these settings (the program carries over). */
+  newMatchWith(scenario: ScenarioId, rules: Ruleset['id']): void {
+    this.scenarioId = scenario;
+    this.rulesetId = rules;
+    try {
+      localStorage.setItem(MATCH_KEY, JSON.stringify({ scenario, rules }));
+    } catch {
+      /* ignore */
+    }
+    this.best = loadNumber(this.bestKey());
+    this.restart();
+  }
+
   private newMatch(): World {
-    const w = createSandbox();
+    const w = createScenario(this.scenarioId, RULESETS[this.rulesetId]);
     w.program = this.program;
     this.targetsTotal = w.list((e) => e.team === ENEMY).length;
     return w;
@@ -121,7 +166,7 @@ export class Game {
       this.won = this.world.seconds;
       if (this.best === null || this.won < this.best) {
         this.best = this.won;
-        saveNumber(BEST_KEY, this.best);
+        saveNumber(this.bestKey(), this.best);
       }
       this.uiVersion++;
     }

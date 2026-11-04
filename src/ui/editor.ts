@@ -31,6 +31,9 @@ import { starterProgram } from '../automation/presets';
 import { missingRequirement } from '../sim/actions';
 import { DEFS as D, costOf, formatCost } from '../sim/defs';
 import {
+  getAddon,
+  isSupplyBuffer,
+  setAddon,
   KEEP_OPTIONS,
   TECH,
   findKeep,
@@ -72,9 +75,18 @@ const SUGGEST: Partial<Record<ScopeId, () => Rule[]>> = {
   ],
   commandCenter: () => [r([{ kind: 'count', what: 'scv', op: '<', n: 16 }], { kind: 'train', def: 'scv' })],
   barracks: () => [r([], { kind: 'train', def: 'marine' })],
-  factory: () => [r([], { kind: 'train', def: 'siegeTank' })],
-  starport: () => [r([], { kind: 'train', def: 'banshee' })],
-  base: () => [r([{ kind: 'count', what: 'army', op: '>=', n: 12 }], { kind: 'setPosture', to: 'offense' })],
+  factory: () => [r([], { kind: 'train', def: 'hellion' })],
+  starport: () => [r([], { kind: 'train', def: 'viking' })],
+  siegeTank: () => [
+    r([{ kind: 'enemyNear', r: 13, not: false }, { kind: 'sieged', not: true }], { kind: 'siege' }),
+    r([{ kind: 'enemyNear', r: 15, not: true }, { kind: 'sieged', not: false }], { kind: 'unsiege' }),
+  ],
+  marine: () => [r([{ kind: 'enemyNear', r: 6, not: false }, { kind: 'hp', op: '>=', pct: 60 }], { kind: 'stim' })],
+  marauder: () => [r([{ kind: 'enemyNear', r: 6, not: false }, { kind: 'hp', op: '>=', pct: 60 }], { kind: 'stim' })],
+  base: () => [
+    r([{ kind: 'supply', op: '<', n: 5 }], { kind: 'build', def: 'supplyDepot' }),
+    r([{ kind: 'count', what: 'army', op: '>=', n: 12 }], { kind: 'setPosture', to: 'offense' }),
+  ],
 };
 
 function r(conds: Condition[], act: Rule['act'], max: number | null = null): Rule {
@@ -263,7 +275,11 @@ export class Editor {
     const scopeLabel = scope === 'base' ? 'Base' : scopeName(scope);
     const cost = formatCost(costOf(def));
     const meta = isUnit ? `${cost} · ${d.buildTime}s · at ${esc(D[trainerOf(def)].name)}` : cost;
-    const keepChip = `<button class="chip k-keep${keep && keep.value !== null ? ' set' : ''}" data-path="K|${def}" data-field="keep" title="Standing target: a rule in ${esc(scopeLabel)}">${esc(keepLabel(keep?.value ?? null))}</button>`;
+    const keepChip = `<button class="chip k-keep${keep && keep.value !== null ? ' set' : ''}" data-path="K|${def}" data-field="keep" title="Standing target: a rule in ${esc(scopeLabel)}">${esc(keepLabel(keep?.value ?? null, def))}</button>`;
+    const addon = d.addons ? getAddon(p, def) : null;
+    const addonChip = d.addons
+      ? `<button class="chip k-keep${addon ? ' set' : ''}" data-path="D|${def}" data-field="addonpick" title="Add-on every ${esc(d.name)} gets: a rule at the top of its list">${addon ? `+ ${esc(D[addon].name)}` : 'no add-on'}</button>`
+      : '';
     const list = p.rules[scope] ?? [];
     const order =
       isUnit && keep
@@ -280,7 +296,7 @@ export class Editor {
     return `<div class="trow${isUnit ? ' unit' : ' bld'}" data-tech="${def}">
       <div class="tname">${icon(def)}<span><b>${esc(d.name)}</b><small>${meta}</small></span></div>
       <div class="tstate"><span class="lock" data-lock="${def}"></span><span class="have" data-have="${def}"></span></div>
-      <div class="tact"><button class="stepbtn" data-act="stepfor" data-def="${def}" title="Add a ${isUnit ? 'train' : 'build'} step to the build order">+ step</button>${keepChip}${order}</div>
+      <div class="tact">${addonChip}<button class="stepbtn" data-act="stepfor" data-def="${def}" title="Add a ${isUnit ? 'train' : 'build'} step to the build order">+ step</button>${keepChip}${order}</div>
       ${others ? `<div class="others">${others}</div>` : ''}
     </div>`;
   }
@@ -308,7 +324,14 @@ export class Editor {
     }
     for (const el of this.body.querySelectorAll<HTMLElement>('[data-lock]')) {
       const def = el.dataset.lock as DefId;
-      const need = isBuildingDef(def) ? missingRequirement(w, PLAYER, def) : w.hasCompleted(PLAYER, trainerOf(def)) ? undefined : trainerOf(def);
+      const addonNeed = D[def].needsAddon;
+      const need = isBuildingDef(def)
+        ? missingRequirement(w, PLAYER, def)
+        : !w.hasCompleted(PLAYER, trainerOf(def))
+          ? trainerOf(def)
+          : addonNeed && !w.list((b) => b.team === PLAYER && b.def === trainerOf(def) && b.addon === addonNeed).length
+            ? addonNeed
+            : undefined;
       const txt = need ? `needs ${D[need].name}` : '';
       if (el.textContent !== txt) el.textContent = txt;
       el.closest('.trow')?.classList.toggle('locked', !!need);
@@ -356,7 +379,7 @@ export class Editor {
     html += `<div class="adders"><button class="addrule${editing ? ' on' : ''}" data-act="layout">${editing ? 'Done editing layout' : 'Edit layout on map'}</button><button class="addrule" data-act="layoutreset">Reset layout</button></div>`;
     if (editing) {
       const cur = (g.mode as { def: string }).def;
-      const pal = (['barracks', 'factory', 'starport', 'commandCenter'] as const)
+      const pal = (['supplyDepot', 'barracks', 'factory', 'starport', 'commandCenter'] as const)
         .map((d) => `<button class="chip k-act${cur === d ? ' cur' : ''}" data-act="palette" data-def="${d}">${icon(d)}${esc(DEFS[d].name)}</button>`)
         .join('');
       html += `<div class="palette">${pal}<button class="chip k-cond${cur === 'muster' ? ' cur' : ''}" data-act="palette" data-def="muster">${icon('attack')}Muster point</button></div>
@@ -675,18 +698,33 @@ export class Editor {
     this.numberRef = null;
     this.menu = [];
 
-    if (fieldKey === 'keep') {
+    if (fieldKey === 'addonpick') {
+      const def = path.slice(2) as DefId;
+      const cur = getAddon(this.game.program, def);
+      this.menu = [
+        { label: `Every ${D[def].name} builds this add-on first (a rule at the top of its list)`, divider: true },
+        ...([null, 'techLab', 'reactor'] as const).map((a) => ({
+          label: a === null ? 'none' : `${D[a].name}${a === 'techLab' ? ': unlocks advanced units' : ': trains two at once'}`,
+          current: a === cur,
+          run: () => setAddon(this.game.program, def, a),
+        })),
+      ];
+    } else if (fieldKey === 'keep') {
       const def = path.slice(2) as DefId;
       const cur = findKeep(this.game.program, def)?.value ?? null;
       const scope = keepScope(def);
       const where = scope === 'base' ? 'Base rules' : `${scopeName(scope)} rules`;
       this.menu = [
         {
-          label: isBuildingDef(def) ? `Place blueprints until you have this many (${where})` : `Train whenever you have fewer than this (${where})`,
+          label: isSupplyBuffer(def)
+            ? `Build a depot whenever free supply drops below this (${where})`
+            : isBuildingDef(def)
+              ? `Place blueprints until you have this many (${where})`
+              : `Train whenever you have fewer than this (${where})`,
           divider: true,
         },
         ...KEEP_OPTIONS(def).map((k) => ({
-          label: k === null ? 'off' : k === 'always' ? 'always (no limit)' : `keep ${k}`,
+          label: k === 'always' ? 'always (no limit)' : keepLabel(k, def),
           current: k === cur,
           run: () => setKeep(this.game.program, def, k),
         })),
