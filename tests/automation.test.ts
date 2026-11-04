@@ -230,3 +230,59 @@ describe('program data', () => {
     expect(nodeCount(p)).toBeGreaterThan(20);
   });
 });
+
+describe('production view: keep targets are ordinary rules', () => {
+  it('reads keep targets out of the starter program', async () => {
+    const { getKeep } = await import('../src/automation/production');
+    const p = starterProgram();
+    expect(getKeep(p, 'gatherer')).toBe(16); // Home: if count of Gatherer < 16 → train Gatherer
+    expect(getKeep(p, 'lightInfantry')).toBe(6);
+    expect(getKeep(p, 'heavyInfantry')).toBe('always');
+    expect(getKeep(p, 'tank')).toBe('always');
+    expect(getKeep(p, 'infantryTraining')).toBe(null); // built by the build order instead
+  });
+
+  it('setting a keep edits, adds or removes exactly one rule, which then runs', async () => {
+    const { getKeep, setKeep, findKeep } = await import('../src/automation/production');
+    const p = emptyProgram();
+    setKeep(p, 'gatherer', 7);
+    expect(p.rules.home).toEqual([
+      expect.objectContaining({ conds: [{ kind: 'count', what: 'gatherer', op: '<', n: 7 }], act: { kind: 'train', def: 'gatherer' } }),
+    ]);
+    const id = findKeep(p, 'gatherer')!.rule.id;
+    setKeep(p, 'gatherer', 'always');
+    expect(p.rules.home!.length).toBe(1);
+    expect(p.rules.home![0].id).toBe(id); // same rule, edited in place
+    expect(p.rules.home![0].conds).toEqual([]);
+    setKeep(p, 'gatherer', 9);
+    expect(getKeep(p, 'gatherer')).toBe(9);
+    setKeep(p, 'infantryTraining', 2);
+    expect(p.rules.base?.[0].act).toEqual({ kind: 'build', def: 'infantryTraining' });
+    setKeep(p, 'gatherer', null);
+    expect(p.rules.home).toBeUndefined();
+    // Editing the rule elsewhere (e.g. its building tab) shows up as the keep value.
+    p.rules.base![0].conds = [{ kind: 'count', what: 'infantryTraining', op: '<', n: 3 }];
+    expect(getKeep(p, 'infantryTraining')).toBe(3);
+    p.rules.base![0].on = false;
+    expect(getKeep(p, 'infantryTraining')).toBe(null);
+  });
+
+  it('a keep target for a building places blueprints until there are that many', async () => {
+    const { setKeep } = await import('../src/automation/production');
+    const { world } = base({ rules: { gatherer: [rule({ act: { kind: 'gather', res: 'minerals', to: 'needy' } })] } });
+    setKeep(world.program!, 'infantryTraining', 2);
+    world.stepSeconds(240);
+    expect(of(world, 'infantryTraining').length).toBe(2);
+  });
+
+  it('build-order steps continue from earlier ones', async () => {
+    const { stepFor } = await import('../src/automation/production');
+    const p = emptyProgram();
+    const a = stepFor(p, 'gatherer');
+    expect(a).toMatchObject({ kind: 'train', def: 'gatherer', n: 5 });
+    p.order.push(a);
+    expect(stepFor(p, 'gatherer')).toMatchObject({ n: 6 });
+    expect(stepFor(p, 'tank')).toMatchObject({ kind: 'train', def: 'tank', n: 1 });
+    expect(stepFor(p, 'port')).toMatchObject({ kind: 'build', def: 'port' });
+  });
+});

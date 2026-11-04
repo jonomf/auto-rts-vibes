@@ -1330,3 +1330,157 @@ em {
     animation: none;
   }
 }
+
+/* Build order view: tech tree */
+.tech {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tgroup {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.trow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 7px 8px;
+  background: #121a20;
+}
+.trow + .trow {
+  border-top: 1px solid var(--line);
+}
+.trow.bld {
+  background: #151f26;
+}
+.trow.unit .tname {
+  padding-left: 18px;
+}
+.tname {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.tname svg {
+  flex: none;
+  color: var(--player);
+}
+.tname span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.tname b {
+  font-weight: 600;
+  font-size: 13px;
+}
+.tname small {
+  font: 500 10.5px var(--mono);
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trow.locked .tname b,
+.trow.locked .tname svg {
+  opacity: 0.55;
+}
+.tstate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 11px var(--mono);
+}
+.tstate .lock {
+  color: var(--warn);
+  font-weight: 500;
+}
+.tstate .have {
+  min-width: 34px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.tact {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.stepbtn {
+  font: 600 10px var(--mono);
+  color: var(--muted);
+  padding: 4px 7px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 5px;
+}
+.stepbtn:hover {
+  color: var(--own);
+  border-color: var(--own);
+}
+.chip.k-keep {
+  font: 600 11px var(--mono);
+  min-width: 70px;
+  justify-content: center;
+  color: var(--muted);
+  border: 1px dashed var(--line-strong);
+}
+.chip.k-keep.set {
+  color: var(--act);
+  background: var(--act-bg);
+  border: 1px solid var(--act-line);
+}
+.tact .prio {
+  font: 600 10px var(--mono);
+  color: var(--muted);
+  margin-left: 2px;
+}
+.tact button[data-act='up'],
+.tact button[data-act='down'] {
+  width: 20px;
+  height: 22px;
+  border-radius: 4px;
+  color: var(--muted);
+}
+.tact button[data-act]:hover:not(:disabled) {
+  color: var(--text);
+  background: #1d2830;
+}
+.tact button:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+.trow .others {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-left: 26px;
+}
+.trow.unit .others {
+  padding-left: 44px;
+}
+.also {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: left;
+  padding: 2px 6px;
+  border-left: 2px solid var(--act-line);
+}
+.also:hover {
+  color: var(--text);
+}
+.tab.build span {
+  font-weight: 600;
+}
+@media (max-width: 760px) {
+  .trow {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .trow .tact {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}

@@ -28,6 +28,20 @@ import {
   type Schema,
 } from '../automation/blocks';
 import { starterProgram } from '../automation/presets';
+import { missingRequirement } from '../sim/actions';
+import { DEFS as D, costOf, formatCost } from '../sim/defs';
+import {
+  KEEP_OPTIONS,
+  TECH,
+  findKeep,
+  isBuildingDef,
+  keepLabel,
+  keepScope,
+  otherRules,
+  setKeep,
+  stepFor,
+  trainerOf,
+} from '../automation/production';
 import { ruleKey, type Condition, type Rule, type ScopeId, type Step } from '../automation/types';
 import { icon } from './icons';
 
@@ -38,7 +52,9 @@ type Ref = { role: Role; scope: ScopeId; get: () => Block; set: (b: Block) => vo
 type MenuItem = { label: string; help?: string; current?: boolean; danger?: boolean; divider?: boolean; run?: () => void };
 
 const SCOPE_HELP: Record<string, string> = {
-  base: 'The build order runs top to bottom, one step at a time. Base rules fire whenever their conditions hold.',
+  build:
+    'Everything you build, in one place. Steps run top to bottom, one at a time. Below them, every building and unit in tech order: add it as a step, or give it a standing “keep” target. A keep target is an ordinary rule, so it also shows (and can be edited) in that building’s tab or in Base.',
+  base: 'Base rules fire whenever their conditions hold. The build order has its own tab.',
   unit: 'Each unit follows the first rule whose conditions hold and whose action is possible. A rule higher up interrupts one lower down.',
   army: 'Every fighter runs its own type’s rules first, then these.',
   building: 'Whenever the training queue is empty, the first rule that holds and can be paid for from this building’s own stock trains a unit.',
@@ -108,7 +124,8 @@ export class Editor {
       if (!this.pop.hidden && !this.pop.contains(e.target as Node) && !(e.target as HTMLElement).closest?.('.chip'))
         this.closePop();
     });
-    this.body.addEventListener('scroll', () => this.closePop());
+    // Keep an open menu attached to its chip while the panel scrolls.
+    this.body.addEventListener('scroll', () => this.reposition());
   }
 
   /** Called by the HUD loop. Re-renders when the program changes; otherwise only updates live stats. */
@@ -143,22 +160,29 @@ export class Editor {
         <button data-cmd="close" class="x" title="Close (P)">✕</button>
       </div>`;
 
-    const tab = (s: ScopeId) => {
-      const n = s === 'base' ? (p.rules.base?.length ?? 0) + p.order.length : (p.rules[s]?.length ?? 0);
-      const ic = s === 'base' ? icon('build') : s === 'army' ? icon('attack') : icon(s as DefId);
-      return `<button class="tab${g.scope === s ? ' on' : ''}${n ? '' : ' norules'}" data-scope="${s}" data-count="${s}" title="${esc(scopeName(s))}">${ic}<span>${esc(shortName(s))}</span>${n ? `<i title="${n} rule${n === 1 ? '' : 's'}">${n}</i>` : ''}</button>`;
+    const tab = (s: ScopeId | 'build') => {
+      const n = s === 'build' ? p.order.length : (p.rules[s]?.length ?? 0);
+      const ic = s === 'build' ? icon('program') : s === 'base' ? icon('build') : s === 'army' ? icon('attack') : icon(s as DefId);
+      const name = s === 'build' ? 'Build order' : scopeName(s);
+      const what = s === 'build' ? 'step' : 'rule';
+      return `<button class="tab${g.scope === s ? ' on' : ''}${n ? '' : ' norules'}${s === 'build' ? ' build' : ''}" data-scope="${s}" data-count="${s}" title="${esc(name)}">${ic}<span>${esc(s === 'build' ? name : shortName(s))}</span>${n ? `<i title="${n} ${what}${n === 1 ? '' : 's'}">${n}</i>` : ''}</button>`;
     };
     this.tabs.innerHTML = `
-      <div class="grp">${tab('base')}<span class="div"></span>${UNIT_SCOPES.map(tab).join('')}</div>
+      <div class="grp">${tab('build')}${tab('base')}<span class="div"></span>${UNIT_SCOPES.map(tab).join('')}</div>
       <div class="grp">${BUILDING_SCOPES.map(tab).join('')}</div>`;
 
+    if (g.scope === 'build') {
+      this.body.innerHTML = this.buildHtml();
+      this.afterBodyRender();
+      return;
+    }
     const s = g.scope;
     const kind = scopeKind(s);
     const help = s === 'army' ? `${SCOPE_HELP.army} ${SCOPE_HELP.unit}` : SCOPE_HELP[kind];
     let html = `<div class="scope-head"><h3>${esc(scopeName(s))}</h3><p>${esc(help)}</p></div>`;
 
     if (s === 'base') {
-      html += `<section><h4>Build order</h4>${this.stepsHtml()}</section>`;
+      html += `<p class="note">Build-order steps and per-building targets live in the <button class="link" data-scope="build">Build order</button> tab.</p>`;
       html += `<section><h4>Base rules</h4>${this.rulesHtml('base')}</section>`;
       html += `<section><h4>Layout</h4>${this.layoutHtml()}</section>`;
     } else {
@@ -167,6 +191,10 @@ export class Editor {
       html += this.rulesHtml(s);
     }
     this.body.innerHTML = html;
+    this.afterBodyRender();
+  }
+
+  private afterBodyRender(): void {
     this.noteShown = !!this.body.querySelector('.editpause');
     if (this.popAnchor) this.reposition();
   }
@@ -211,6 +239,80 @@ export class Editor {
           }</div>`
         : '';
     return `<div class="rules">${rows.join('')}</div>${empty}<button class="addrule" data-act="addrule" data-scope-arg="${scope}">+ Rule</button>`;
+  }
+
+  // ---- Build order view ---------------------------------------------------------------------
+
+  private buildHtml(): string {
+    let html = `<div class="scope-head"><h3>Build order</h3><p>${esc(SCOPE_HELP.build)}</p></div>`;
+    html += `<section><h4>Steps</h4>${this.stepsHtml()}</section>`;
+    html += `<section><h4>Tech tree</h4><div class="tech">${TECH.map((t) => this.techGroupHtml(t.building, t.units)).join('')}</div></section>`;
+    return html;
+  }
+
+  private techGroupHtml(building: DefId, units: DefId[]): string {
+    const rows = [this.techRowHtml(building, false), ...units.map((u) => this.techRowHtml(u, true))];
+    return `<div class="tgroup">${rows.join('')}</div>`;
+  }
+
+  private techRowHtml(def: DefId, isUnit: boolean): string {
+    const p = this.game.program;
+    const d = D[def];
+    const keep = findKeep(p, def);
+    const scope = keepScope(def);
+    const scopeLabel = scope === 'base' ? 'Base' : scopeName(scope);
+    const cost = formatCost(costOf(def));
+    const meta = isUnit ? `${cost} · ${d.buildTime}s · at ${esc(D[trainerOf(def)].name)}` : cost;
+    const keepChip = `<button class="chip k-keep${keep && keep.value !== null ? ' set' : ''}" data-path="K|${def}" data-field="keep" title="Standing target: a rule in ${esc(scopeLabel)}">${esc(keepLabel(keep?.value ?? null))}</button>`;
+    const list = p.rules[scope] ?? [];
+    const order =
+      isUnit && keep
+        ? `<span class="prio" title="Priority in ${esc(scopeLabel)}: rules higher up train first">#${keep.index + 1}</span>
+           <button data-act="up" data-path="R|${scope}|${keep.index}" title="Train before others"${keep.index === 0 ? ' disabled' : ''}>↑</button>
+           <button data-act="down" data-path="R|${scope}|${keep.index}" title="Train after others"${keep.index === list.length - 1 ? ' disabled' : ''}>↓</button>`
+        : '';
+    const others = otherRules(p, def)
+      .map(
+        (o) =>
+          `<button class="also" data-scope="${o.scope}" title="Open ${esc(o.scope === 'base' ? 'Base' : scopeName(o.scope))} rules">also: ${esc(describeRule(o.rule, o.scope))}</button>`,
+      )
+      .join('');
+    return `<div class="trow${isUnit ? ' unit' : ' bld'}" data-tech="${def}">
+      <div class="tname">${icon(def)}<span><b>${esc(d.name)}</b><small>${meta}</small></span></div>
+      <div class="tstate"><span class="lock" data-lock="${def}"></span><span class="have" data-have="${def}"></span></div>
+      <div class="tact"><button class="stepbtn" data-act="stepfor" data-def="${def}" title="Add a ${isUnit ? 'train' : 'build'} step to the build order">+ step</button>${keepChip}${order}</div>
+      ${others ? `<div class="others">${others}</div>` : ''}
+    </div>`;
+  }
+
+  /** Per-frame text for the tech tree: unlocked or not, and how many you have. */
+  private liveTech(): void {
+    const w = this.game.world;
+    const have = new Map<DefId, number>();
+    const pending = new Map<DefId, number>();
+    const add = (m: Map<DefId, number>, k: DefId) => m.set(k, (m.get(k) ?? 0) + 1);
+    for (const e of w.all()) {
+      if (e.team !== PLAYER || D[e.def].inert) continue;
+      if (D[e.def].category === 'building' && !e.complete) add(pending, e.def);
+      else add(have, e.def);
+      for (const q of e.queue) add(pending, q.def);
+      if (e.order.type === 'build') add(pending, e.order.def);
+    }
+    for (const el of this.body.querySelectorAll<HTMLElement>('[data-have]')) {
+      const def = el.dataset.have as DefId;
+      const n = have.get(def) ?? 0;
+      const q = pending.get(def) ?? 0;
+      const txt = `${n}${q ? ` +${q}` : ''}`;
+      if (el.textContent !== txt) el.textContent = txt;
+      el.title = `${n} on the map${q ? `, ${q} ${isBuildingDef(def) ? 'being built' : 'queued'}` : ''}`;
+    }
+    for (const el of this.body.querySelectorAll<HTMLElement>('[data-lock]')) {
+      const def = el.dataset.lock as DefId;
+      const need = isBuildingDef(def) ? missingRequirement(w, PLAYER, def) : w.hasCompleted(PLAYER, trainerOf(def)) ? undefined : trainerOf(def);
+      const txt = need ? `needs ${D[need].name}` : '';
+      if (el.textContent !== txt) el.textContent = txt;
+      el.closest('.trow')?.classList.toggle('locked', !!need);
+    }
   }
 
   private showNote(): boolean {
@@ -308,10 +410,12 @@ export class Editor {
     for (const el of this.tabs.querySelectorAll<HTMLElement>('[data-count]')) {
       const s = el.dataset.count!;
       const n = byDef.get(s) ?? 0;
-      el.title = s === 'base' ? 'Base' : `${scopeName(s as ScopeId)} · ${n} on the map`;
+      el.title =
+        s === 'build' ? 'Build order' : s === 'base' || s === 'army' ? scopeName(s) : `${scopeName(s as ScopeId)} · ${n} on the map`;
     }
+    if (this.game.scope === 'build') this.liveTech();
     // Build order progress.
-    for (const el of this.el.querySelectorAll<HTMLElement>('[data-step]')) {
+    for (const el of this.body.querySelectorAll<HTMLElement>('.rule.step[data-step]')) {
       const i = Number(el.dataset.step);
       const state = i < w.auto.step ? 'done' : i === w.auto.step ? 'current' : '';
       el.classList.toggle('done', state === 'done');
@@ -320,7 +424,8 @@ export class Editor {
       const m = state === 'done' ? '✓' : state === 'current' ? '▶' : '';
       if (mark.textContent !== m) mark.textContent = m;
       const st = el.querySelector<HTMLElement>('[data-stepstatus]')!;
-      const t = state === 'current' ? w.auto.stepStatus : '';
+      // "done" is stale when steps were added after the order finished (and before the next tick).
+      const t = state === 'current' && w.auto.stepStatus !== 'done' ? w.auto.stepStatus : '';
       if (st.textContent !== t) st.textContent = t;
     }
     // Highlight the rule the selected unit is following.
@@ -427,7 +532,8 @@ export class Editor {
       case 'del': {
         const ref = this.listOf(path);
         if (!ref) return;
-        ref.list.splice(ref.i, 1);
+        const [removed] = ref.list.splice(ref.i, 1) as { id?: string }[];
+        this.resumeIfNew(removed?.id);
         if (path.startsWith('S') && ref.i < g.world.auto.step) g.world.auto.step--;
         break;
       }
@@ -460,6 +566,11 @@ export class Editor {
       case 'addstep': {
         const sc = schemaOf('step', actEl.dataset.kind!)!;
         const step = { ...(sc.make('base') as Step), id: newId() };
+        p.order.push(step);
+        return this.addedNew(step.id);
+      }
+      case 'stepfor': {
+        const step = stepFor(p, actEl.dataset.def as DefId);
         p.order.push(step);
         return this.addedNew(step.id);
       }
@@ -531,6 +642,13 @@ export class Editor {
     }
   }
 
+  /** Deleting the rule or step you just added (before resuming) undoes the pause too. */
+  private resumeIfNew(id: string | undefined): void {
+    if (!id || id !== this.newItemId) return;
+    if (this.game.editPause && this.game.paused) this.game.resume();
+    this.newItemId = null;
+  }
+
   /** A rule or step was just added: pause so units don't act on its defaults, and point at it. */
   private addedNew(id: string): void {
     this.game.pauseForEdit();
@@ -557,7 +675,23 @@ export class Editor {
     this.numberRef = null;
     this.menu = [];
 
-    if (fieldKey === 'max') {
+    if (fieldKey === 'keep') {
+      const def = path.slice(2) as DefId;
+      const cur = findKeep(this.game.program, def)?.value ?? null;
+      const scope = keepScope(def);
+      const where = scope === 'base' ? 'Base rules' : `${scopeName(scope)} rules`;
+      this.menu = [
+        {
+          label: isBuildingDef(def) ? `Place blueprints until you have this many (${where})` : `Train whenever you have fewer than this (${where})`,
+          divider: true,
+        },
+        ...KEEP_OPTIONS(def).map((k) => ({
+          label: k === null ? 'off' : k === 'always' ? 'always (no limit)' : `keep ${k}`,
+          current: k === cur,
+          run: () => setKeep(this.game.program, def, k),
+        })),
+      ];
+    } else if (fieldKey === 'max') {
       const ref = this.listOf(path);
       const rule = ref?.list[ref.i] as Rule;
       this.menu = MAX_OPTIONS.map((m) => ({
@@ -612,8 +746,16 @@ export class Editor {
       });
     }
     if (ref.remove) {
+      const remove = ref.remove;
       items.push({ label: '', divider: true });
-      items.push({ label: ref.role === 'step' ? 'Remove step' : 'Remove condition', danger: true, run: ref.remove });
+      items.push({
+        label: ref.role === 'step' ? 'Remove step' : 'Remove condition',
+        danger: true,
+        run: () => {
+          if (ref.role === 'step') this.resumeIfNew((block as { id?: string }).id);
+          remove();
+        },
+      });
     }
     return items;
   }
@@ -623,9 +765,9 @@ export class Editor {
       const { ref, field } = this.numberRef;
       const v = ref.get()[field.key] as number;
       this.pop.innerHTML = `<div class="num">
-        <button data-step="-1">−</button>
+        <button data-inc="-1">−</button>
         <input type="number" id="prog-num" value="${v}" min="${field.min}" max="${field.max}" step="${field.step}" />
-        <button data-step="1">+</button></div>
+        <button data-inc="1">+</button></div>
         ${field.fmt ? `<div class="fmt">${esc(field.fmt(v))}</div>` : ''}`;
       return;
     }
@@ -642,11 +784,11 @@ export class Editor {
 
   private onPopClick(e: MouseEvent): void {
     const t = e.target as HTMLElement;
-    const stepBtn = t.closest<HTMLElement>('[data-step]');
+    const stepBtn = t.closest<HTMLElement>('[data-inc]');
     if (stepBtn && this.numberRef) {
       const { field } = this.numberRef;
       const input = this.pop.querySelector<HTMLInputElement>('input')!;
-      this.setNumber(Number(input.value) + Number(stepBtn.dataset.step) * field.step);
+      this.setNumber(Number(input.value) + Number(stepBtn.dataset.inc) * field.step);
       return;
     }
     const opt = t.closest<HTMLElement>('[data-i]');

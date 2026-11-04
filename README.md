@@ -25,8 +25,12 @@ Press `P` for the editor. Every rule is a sentence of word-chips; click a word t
   whose conditions hold and whose action is possible. A higher rule interrupts a lower one.
   `max N` caps how many units may follow a rule (e.g. *max 3 → gather gas*).
 - **Building rules**: when the queue is empty, the first rule that holds *and can be paid for from this building's stock* trains.
-- **Base**: a build order (steps run top to bottom with a live status), base-wide rules (posture switches, extra buildings),
-  and the **layout**: building slots and a muster point placed on the map.
+- **Build order** tab: one place for everything you build. Ordered steps (top to bottom, with a live status), then the
+  whole tech tree with a **+ step** button and a standing **keep N** target per building and unit. A keep target is an
+  ordinary rule (*count of X < N → train X* in X's building, or *→ build X* in Base), so it stays in sync with those tabs.
+  Unit rows also show and change training priority within their building.
+- **Base**: base-wide rules (posture switches, extra buildings) and the **layout**: building slots and a muster point placed on the map.
+- Adding a rule or step pauses the game so you can set it up before units act on its defaults. Resume, or delete it.
 - **Posture** (economy / defense / offense) is a base-wide variable rules can read and set.
 - **Haul** moves a crate (50 minerals / 25 gas) between stockpiles. *Something needs X* means a blueprint's unpaid cost or a
   production building below its reserve (2× its priciest unit), net of loads already on the way.

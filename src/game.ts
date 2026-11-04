@@ -41,8 +41,8 @@ export class Game {
   /** No direct unit control: the program runs everything (the Auto-Starcraft rule). */
   handsOff = true;
   programsOpen = true;
-  /** Scope the editor shows. */
-  scope: ScopeId = 'gatherer';
+  /** Editor tab: a rule scope, or the combined Build order view. */
+  scope: ScopeId | 'build' = 'gatherer';
   selection = new Set<EntityId>();
   mode: Mode = { type: 'normal' };
   menu: 'root' | 'build' = 'root';
