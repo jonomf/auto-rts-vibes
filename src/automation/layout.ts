@@ -1,6 +1,6 @@
 /** Where automated buildings go, and the named points rules can send units to. */
 import { DEFS, type DefId } from '../sim/defs';
-import { checkPlacement, isBuilding, isResource } from '../sim/actions';
+import { addonSpot, checkPlacement, geyserAt, isBuilding, isResource } from '../sim/actions';
 import { squaresOverlap } from '../sim/geometry';
 import { NEUTRAL, type Entity, type Team } from '../sim/types';
 import type { World } from '../sim/world';
@@ -46,19 +46,58 @@ export function destPoint(world: World, team: Team, layout: Layout, dest: Dest):
 
 type Footprint = { x: number; y: number; half: number };
 
-/** Buildings that gatherers are on their way to place (not yet on the map). */
+const ADDON_HALF = DEFS.techLab.radius;
+
+/** Where `def`'s add-on would go if it were placed at (x, y) (classic rules). */
+function addonFootprint(def: DefId, x: number, y: number): Footprint | null {
+  if (!DEFS[def].addons) return null;
+  const spot = addonSpot({ def, x, y } as never);
+  return { x: spot.x, y: spot.y, half: ADDON_HALF };
+}
+
+/**
+ * Ground that automated placement must leave free: buildings gatherers are on their way to
+ * place, and (classic rules) the add-on spot beside every production building.
+ */
 export function pendingFootprints(world: World, team: Team): Footprint[] {
   const out: Footprint[] = [];
-  for (const u of world.all())
-    if (u.team === team && u.order.type === 'build')
-      out.push({ x: u.order.x, y: u.order.y, half: DEFS[u.order.def].radius });
+  const attached = world.ruleset.addons === 'attached';
+  for (const e of world.all()) {
+    if (e.team !== team) continue;
+    if (e.order.type === 'build') {
+      out.push({ x: e.order.x, y: e.order.y, half: DEFS[e.order.def].radius });
+      const a = attached && addonFootprint(e.order.def, e.order.x, e.order.y);
+      if (a) out.push(a);
+    }
+    if (attached && isBuilding(e) && !e.addon) {
+      const a = addonFootprint(e.def, e.x, e.y);
+      if (a) out.push(a);
+    }
+  }
   return out;
 }
 
 function siteOk(world: World, def: DefId, x: number, y: number, pending: Footprint[]): boolean {
   if (!checkPlacement(world, def, x, y).ok) return false;
   const half = DEFS[def].radius;
-  return !pending.some((p) => squaresOverlap(x, y, half, p.x, p.y, p.half, 0.3));
+  if (pending.some((p) => squaresOverlap(x, y, half, p.x, p.y, p.half, 0.3))) return false;
+  // Classic rules: a production building also needs its add-on spot free.
+  const a = world.ruleset.addons === 'attached' && addonFootprint(def, x, y);
+  if (a) {
+    if (!checkPlacement(world, 'techLab', a.x, a.y).ok) return false;
+    if (pending.some((p) => squaresOverlap(a.x, a.y, a.half, p.x, p.y, p.half, 0.3))) return false;
+  }
+  return true;
+}
+
+/** The nearest geyser to the main base without a Refinery (built or on the way). */
+function freeGeyser(world: World, team: Team, a: Entity): { x: number; y: number } | undefined {
+  const taken = (g: Entity) =>
+    world.list((e) => e.def === 'refinery' && e.x === g.x && e.y === g.y).length > 0 ||
+    world.list((u) => u.team === team && u.order.type === 'build' && u.order.def === 'refinery' && geyserAt(world, u.order.x, u.order.y) === g).length > 0;
+  const free = world.list((e) => e.def === 'gasSource' && e.remaining > 0 && !taken(e));
+  free.sort((p, q) => Math.hypot(p.x - a.x, p.y - a.y) - Math.hypot(q.x - a.x, q.y - a.y) || p.id - q.id);
+  return free[0] && { x: free[0].x, y: free[0].y };
 }
 
 /**
@@ -68,6 +107,7 @@ function siteOk(world: World, def: DefId, x: number, y: number, pending: Footpri
 export function findSite(world: World, team: Team, layout: Layout, def: DefId): { x: number; y: number } | undefined {
   const a = anchorOf(world, team);
   if (!a) return undefined;
+  if (DEFS[def].onGeyser) return freeGeyser(world, team, a);
   const pending = pendingFootprints(world, team);
 
   for (const slot of layout.slots) {

@@ -28,6 +28,7 @@ const paths: Record<UiAction['icon'], string> = {
   viking: '<path d="M4 13l8-8 8 8-8 3z"/><path d="M12 16v4"/>',
   medivac: '<rect x="5" y="8" width="14" height="9" rx="4.5"/><path d="M12 10v5M9.5 12.5h5"/>',
   zergling: '<path d="M5 17c3-8 11-8 14 0"/><path d="M8 13l-3-4M16 13l3-4"/>',
+  baneling: '<circle cx="12" cy="13" r="6"/><path d="M9 12h0M15 12h0M8 8l-2-3M16 8l2-3"/>',
   bunker: '<path d="M4 18h16V11l-3-4H7l-3 4z"/><path d="M8 13h8"/>',
   missileTurret: '<circle cx="12" cy="14" r="5"/><path d="M9 10l-2-5M15 10l2-5"/>',
   siege: '<path d="M3 18h18M7 18l3-6h4l3 6M12 12V5l6-1"/>',

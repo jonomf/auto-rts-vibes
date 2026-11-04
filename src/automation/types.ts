@@ -10,16 +10,16 @@
  *  - order: the build order, run one step at a time from the top.
  *  - layout: where buildings go, relative to the main Home, plus the army's muster point.
  */
-import type { DefId, ResourceType } from '../sim/defs';
+import type { AddonId, DefId, ResourceType } from '../sim/defs';
 
 export type Posture = 'economy' | 'defense' | 'offense';
 export type Op = '<' | '>=';
 
 export type CountWhat = DefId | 'army';
-export type Place = 'self' | 'commandCenter' | DefId;
+export type Place = 'self' | DefId;
 export type NeedWhere = 'any' | 'blueprint' | DefId;
-export type DeliverTo = 'commandCenter' | 'needy' | DefId;
-export type HaulFrom = 'commandCenter' | DefId;
+export type DeliverTo = 'needy' | DefId;
+export type HaulFrom = DefId;
 export type HaulTo = 'needy' | 'blueprint' | DefId;
 export type Dest = 'muster' | 'home' | 'enemy';
 
@@ -32,7 +32,12 @@ export type Condition =
   | { kind: 'enemyNear'; r: number; not: boolean }
   | { kind: 'hp'; op: Op; pct: number }
   | { kind: 'carrying'; not: boolean }
-  | { kind: 'time'; op: Op; s: number };
+  | { kind: 'time'; op: Op; s: number }
+  /** Supply cap minus supply used (negative when over a soft cap). */
+  | { kind: 'supply'; op: Op; n: number }
+  | { kind: 'sieged'; not: boolean }
+  /** Building scope: which add-on this building has (or 'none'). */
+  | { kind: 'addon'; is: AddonId | 'none' };
 
 export type Action =
   | { kind: 'gather'; res: ResourceType; to: DeliverTo }
@@ -43,7 +48,12 @@ export type Action =
   | { kind: 'hold' }
   | { kind: 'train'; def: DefId }
   | { kind: 'build'; def: DefId }
-  | { kind: 'setPosture'; to: Posture };
+  | { kind: 'setPosture'; to: Posture }
+  | { kind: 'siege' }
+  | { kind: 'unsiege' }
+  | { kind: 'stim' }
+  /** Building scope: build this add-on onto the building (paid from its own stock). */
+  | { kind: 'addon'; def: AddonId };
 
 export type Rule = {
   id: string;
@@ -58,7 +68,9 @@ export type Step =
   | { id: string; kind: 'build'; def: DefId }
   | { id: string; kind: 'train'; def: DefId; n: number }
   | { id: string; kind: 'wait'; cond: Condition }
-  | { id: string; kind: 'setPosture'; to: Posture };
+  | { id: string; kind: 'setPosture'; to: Posture }
+  /** Put an add-on on one building of a type (one without an add-on yet). */
+  | { id: string; kind: 'addon'; def: AddonId; on: DefId };
 
 export type ScopeId = DefId | 'army' | 'base';
 

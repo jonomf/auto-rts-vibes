@@ -2,8 +2,21 @@
  * Runs the player's Program inside the simulation, a few times a second.
  * It only ever acts through World.issue(cmd, 'auto'), the same commands the mouse issues.
  */
-import { DEFS, HAUL_LOAD, costOf, type DefId, type ResourceType } from '../sim/defs';
-import { canAttack, canHit, checkTrain, isBuilding, isGatherer, isUnit, missingRequirement } from '../sim/actions';
+import { DEFS, HAUL_LOAD, costOf, isAddon, type AddonId, type DefId, type ResourceType } from '../sim/defs';
+import {
+  buildingAddon,
+  canAttack,
+  canHarvest,
+  canHit,
+  checkAddon,
+  checkTrain,
+  isBuilding,
+  isGatherer,
+  isHealer,
+  isUnit,
+  missingRequirement,
+} from '../sim/actions';
+import { lanesOf } from '../sim/systems/production';
 import { NEUTRAL, PLAYER, type Command, type Entity, type Team } from '../sim/types';
 import type { World } from '../sim/world';
 import { anchorOf, destPoint, findSite } from './layout';
@@ -66,7 +79,9 @@ function countAll(world: World, team: Team): Map<CountWhat, number> {
   };
   for (const e of world.all()) {
     if (e.team !== team || DEFS[e.def].inert) continue;
-    add(e.def);
+    // Attached add-on entities are counted through their building (so both rulesets count the same).
+    if (!isAddon(e.def)) add(e.def);
+    if (e.addon) add(e.addon);
     for (const q of e.queue) add(q.def);
     if (e.order.type === 'build') add(e.order.def);
   }
@@ -78,7 +93,7 @@ const cmp = (v: number, op: Op, n: number) => (op === '<' ? v < n : v >= n);
 
 // ---- Conditions ---------------------------------------------------------------------
 
-function ownBuildings(ctx: Ctx, def: DefId | 'commandCenter', completeOnly = true): Entity[] {
+function ownBuildings(ctx: Ctx, def: DefId, completeOnly = true): Entity[] {
   return ctx.world.list((e) => e.team === ctx.team && e.def === def && (!completeOnly || e.complete));
 }
 
@@ -93,7 +108,7 @@ export function evalCond(ctx: Ctx, c: Condition, self?: Entity): boolean {
       return world.hasCompleted(ctx.team, c.def) !== c.not;
     case 'stock': {
       const places =
-        c.at === 'self' ? (self && isBuilding(self) ? [self] : []) : ownBuildings(ctx, c.at === 'commandCenter' ? 'commandCenter' : c.at);
+        c.at === 'self' ? (self && isBuilding(self) ? [self] : []) : ownBuildings(ctx, c.at);
       if (places.length === 0) return false;
       const vals = places.map((b) => b.stock[c.res]);
       // "Any building of that type": the lowest one for <, the highest one for >=.
@@ -115,6 +130,17 @@ export function evalCond(ctx: Ctx, c: Condition, self?: Entity): boolean {
       return self ? !!self.cargo !== c.not : false;
     case 'time':
       return cmp(world.seconds, c.op, c.s);
+    case 'supply': {
+      const s = world.supply(ctx.team);
+      return cmp(s.cap - s.used, c.op, c.n);
+    }
+    case 'sieged':
+      return self ? (self.sieged || (self.deploying > 0 && !self.sieged)) !== c.not : false;
+    case 'addon': {
+      if (!self) return false;
+      const has: AddonId | 'none' = self.addon ?? (self.queue.find((q) => isAddon(q.def))?.def as AddonId | undefined) ?? 'none';
+      return has === c.is;
+    }
   }
 }
 
@@ -123,7 +149,8 @@ export function evalCond(ctx: Ctx, c: Condition, self?: Entity): boolean {
 /** Production buildings keep a reserve of twice their most expensive unit. */
 export function reserveFor(def: DefId, res: ResourceType): number {
   const trains = def === 'commandCenter' ? [] : (DEFS[def].trains ?? []);
-  return 2 * Math.max(0, ...trains.map((t) => costOf(t)[res]));
+  const addons = DEFS[def].addons ?? [];
+  return Math.max(2 * Math.max(0, ...trains.map((t) => costOf(t)[res])), ...addons.map((a) => costOf(a)[res]));
 }
 
 /** Resources already on their way to `b` (excluding `self`'s own load). */
@@ -182,14 +209,14 @@ function nearest(list: Entity[], from: Entity): Entity | undefined {
 
 function resolveDeliver(ctx: Ctx, u: Entity, res: ResourceType, to: string): Entity | undefined {
   const homes = () => nearest(ownBuildings(ctx, 'commandCenter'), u);
-  if (to === 'commandCenter') return homes();
+  if (to === 'commandCenter' || to === 'home') return homes();
   if (to === 'needy') return needyTargets(ctx, res, 'any', undefined, u)[0] ?? homes();
   return nearest(ownBuildings(ctx, to as DefId), u) ?? homes();
 }
 
 /** A field of `res` near the deposit with the fewest gatherers already on it. */
 function pickSource(ctx: Ctx, u: Entity, res: ResourceType, deposit: Entity): Entity | undefined {
-  const fields = ctx.world.list((e) => DEFS[e.def].resource?.type === res && e.remaining > 0);
+  const fields = ctx.world.list((e) => DEFS[e.def].resource?.type === res && e.remaining > 0 && canHarvest(ctx.world, e, ctx.team));
   if (fields.length === 0) return undefined;
   const workers = new Map<number, number>();
   for (const g of ctx.world.all())
@@ -220,8 +247,7 @@ function planUnit(ctx: Ctx, act: Action, u: Entity): Command[] | 'move' | null {
     }
     case 'haul': {
       if (!isGatherer(u)) return null;
-      const sources =
-        act.from === 'commandCenter' ? ownBuildings(ctx, 'commandCenter') : ownBuildings(ctx, act.from);
+      const sources = ownBuildings(ctx, act.from);
       const carrying = u.cargo?.type === act.res;
       const from = sources
         .filter((b) => carrying || b.stock[act.res] >= HAUL_LOAD[act.res] / 2)
@@ -231,6 +257,17 @@ function planUnit(ctx: Ctx, act: Action, u: Entity): Command[] | 'move' | null {
       if (!to) return null;
       return [{ type: 'haul', ids: [u.id], res: act.res, fromId: from.id, toId: to.id }];
     }
+    case 'siege':
+    case 'unsiege': {
+      const want = act.kind === 'siege';
+      if (!DEFS[u.def].siege || u.sieged === want || u.deploying > 0) return null;
+      return [{ type: 'siege', ids: [u.id], on: want }];
+    }
+    case 'stim': {
+      const st = DEFS[u.def].stim;
+      if (!st || u.stimmed > 0 || u.hp <= st.hpCost + 1) return null;
+      return [{ type: 'stim', ids: [u.id] }];
+    }
     case 'attack': {
       if (!canAttack(u)) return null;
       const t = world.nearest(u, (e) => canHit(u, e), SIGHT);
@@ -238,7 +275,7 @@ function planUnit(ctx: Ctx, act: Action, u: Entity): Command[] | 'move' | null {
     }
     case 'attackMove':
     case 'move': {
-      if (act.kind === 'attackMove' && !canAttack(u)) return null;
+      if (act.kind === 'attackMove' && !canAttack(u) && !isHealer(u)) return null;
       return destPoint(world, team, ctx.p.layout, act.to) ? 'move' : null;
     }
     case 'hold':
@@ -246,6 +283,26 @@ function planUnit(ctx: Ctx, act: Action, u: Entity): Command[] | 'move' | null {
     default:
       return null;
   }
+}
+
+/** Put add-on `def` on one `on` building without one. Returns a reason when it can't (yet). */
+function tryAddon(ctx: Ctx, def: AddonId, on: DefId, only?: Entity): string | null {
+  const { world } = ctx;
+  const candidates = only ? [only] : ownBuildings(ctx, on).filter((b) => !b.addon && !buildingAddon(b));
+  if (candidates.length === 0) return `no ${DEFS[on].name} without an add-on`;
+  let why = '';
+  for (const b of candidates.sort((x, y) => x.queue.length - y.queue.length || x.id - y.id)) {
+    const check = checkAddon(world, b, def);
+    if (!check.ok) {
+      why = check.reason;
+      continue;
+    }
+    if (world.issue({ type: 'addon', buildingId: b.id, def }, 'auto').ok) {
+      bump(ctx.counts, def, 1);
+      return null;
+    }
+  }
+  return why.charAt(0).toLowerCase() + why.slice(1);
 }
 
 function tryTrain(ctx: Ctx, def: DefId, only?: Entity): boolean {
@@ -319,6 +376,14 @@ function runBuildOrder(ctx: Ctx): void {
       case 'setPosture':
         a.posture = s.to;
         break;
+      case 'addon': {
+        const why = tryAddon(ctx, s.def, s.on);
+        if (why) {
+          a.stepStatus = `waiting: ${why}`;
+          return;
+        }
+        break;
+      }
     }
     a.step++;
     a.stepStatus = '';
@@ -349,11 +414,14 @@ function runBuildings(ctx: Ctx): void {
   const { world } = ctx;
   for (const b of world.list((e) => e.team === ctx.team && isBuilding(e) && e.complete && !DEFS[e.def].inert)) {
     const rules = ctx.p.rules[b.def];
-    if (!rules?.length || b.queue.length > 0) continue;
+    // Keep every production lane busy (a Reactor gives two); nothing while an add-on is going on.
+    if (!rules?.length || b.queue.length >= lanesOf(b) || buildingAddon(b)) continue;
     for (const r of rules) {
-      if (!r.on || r.act.kind !== 'train') continue;
+      if (!r.on || (r.act.kind !== 'train' && r.act.kind !== 'addon')) continue;
+      if (r.act.kind === 'addon' && (b.addon || b.queue.length > 0)) continue;
       if (!r.conds.every((c) => evalCond(ctx, c, b))) continue;
-      if (tryTrain(ctx, r.act.def, b)) {
+      const done = r.act.kind === 'train' ? tryTrain(ctx, r.act.def, b) : tryAddon(ctx, r.act.def, b.def, b) === null;
+      if (done) {
         world.auto.fired[ruleKey(b.def, r)] = world.tick;
         break;
       }
@@ -363,7 +431,7 @@ function runBuildings(ctx: Ctx): void {
 
 export function rulesFor(p: Program, u: Entity): { scope: ScopeId; rule: Rule }[] {
   const own = (p.rules[u.def] ?? []).map((rule) => ({ scope: u.def as ScopeId, rule }));
-  if (!canAttack(u)) return own;
+  if (!canAttack(u) && !isHealer(u)) return own;
   return own.concat((p.rules.army ?? []).map((rule) => ({ scope: 'army' as ScopeId, rule })));
 }
 

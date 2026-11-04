@@ -3,7 +3,7 @@
  * The editor renders each block as a sentence of chips from this; `describe*` renders
  * plain text; `sanitizeProgram` uses it to validate imported JSON.
  */
-import { DEFS, type DefId } from '../sim/defs';
+import { DEF_ALIASES, DEFS, type DefId } from '../sim/defs';
 import type { Action, Condition, Program, Rule, ScopeId, Step } from './types';
 
 export type Role = 'cond' | 'act' | 'step';
@@ -31,22 +31,41 @@ export type Schema = {
 
 // ---- Scopes ---------------------------------------------------------------------------
 
-export const UNIT_SCOPES = ['scv', 'army', 'marine', 'marauder', 'siegeTank', 'banshee'] as const satisfies readonly ScopeId[];
+export const UNIT_SCOPES = [
+  'scv',
+  'army',
+  'marine',
+  'marauder',
+  'medic',
+  'hellion',
+  'siegeTank',
+  'viking',
+  'medivac',
+  'banshee',
+] as const satisfies readonly ScopeId[];
 export const BUILDING_SCOPES = ['commandCenter', 'barracks', 'factory', 'starport'] as const satisfies readonly ScopeId[];
 export const ALL_SCOPES: ScopeId[] = ['base', ...UNIT_SCOPES, ...BUILDING_SCOPES];
 
 export type ScopeKind = 'base' | 'unit' | 'building';
 export const scopeKind = (s: ScopeId): ScopeKind =>
   s === 'base' ? 'base' : s === 'army' || DEFS[s as DefId]?.category === 'unit' ? 'unit' : 'building';
-export const isFighterScope = (s: ScopeId) => s === 'army' || (scopeKind(s) === 'unit' && s !== 'scv');
+export const isFighterScope = (s: ScopeId) => s === 'army' || (scopeKind(s) === 'unit' && s !== 'scv' && !DEFS[s as DefId]?.heal);
+const canSiege = (s: ScopeId) => s === 'army' || s === 'siegeTank';
+const canStim = (s: ScopeId) => s === 'army' || !!DEFS[s as DefId]?.stim;
+const hasAddons = (s: ScopeId) => !!DEFS[s as DefId]?.addons;
 
 export const scopeName = (s: ScopeId) => (s === 'base' ? 'Base' : s === 'army' ? 'Army' : DEFS[s as DefId].name);
 
 // ---- Option lists -------------------------------------------------------------------------
 
-const BUILDINGS: DefId[] = ['commandCenter', 'barracks', 'factory', 'starport'];
+const BUILDINGS: DefId[] = ['commandCenter', 'supplyDepot', 'refinery', 'barracks', 'factory', 'starport'];
+const STOCK_BUILDINGS: DefId[] = ['commandCenter', 'barracks', 'factory', 'starport'];
 const PRODUCTION: DefId[] = ['barracks', 'factory', 'starport'];
-const UNITS: DefId[] = ['scv', 'marine', 'marauder', 'siegeTank', 'banshee'];
+const UNITS: DefId[] = ['scv', 'marine', 'marauder', 'medic', 'hellion', 'siegeTank', 'viking', 'medivac', 'banshee'];
+const ADDONS: Opt[] = [
+  { v: 'techLab', label: 'Tech Lab' },
+  { v: 'reactor', label: 'Reactor' },
+];
 
 const defOpts = (defs: DefId[]): Opt[] => defs.map((d) => ({ v: d, label: DEFS[d].name }));
 const RES: Opt[] = [
@@ -64,7 +83,7 @@ const POSTURE: Opt[] = [
 ];
 const DEST: Opt[] = [
   { v: 'muster', label: 'muster point' },
-  { v: 'home', label: 'Home' },
+  { v: 'home', label: 'Command Center' },
   { v: 'enemy', label: 'enemy base' },
 ];
 
@@ -82,7 +101,11 @@ const CONDITIONS: Schema[] = [
     head: 'count of',
     tokens: [{ f: 'what' }, { f: 'op' }, { f: 'n' }],
     fields: [
-      { key: 'what', type: 'enum', options: () => [...defOpts(UNITS), { v: 'army', label: 'army (all fighters)' }, ...defOpts(BUILDINGS)] },
+      {
+        key: 'what',
+        type: 'enum',
+        options: () => [...defOpts(UNITS), { v: 'army', label: 'army (all fighters)' }, ...defOpts(BUILDINGS), ...ADDONS],
+      },
       { key: 'op', type: 'enum', options: () => OP },
       { key: 'n', type: 'number', min: 0, max: 200, step: 1 },
     ],
@@ -109,7 +132,7 @@ const CONDITIONS: Schema[] = [
       {
         key: 'at',
         type: 'enum',
-        options: (s) => [...(scopeKind(s) === 'building' ? [{ v: 'self', label: 'this building' }] : []), ...defOpts(BUILDINGS)],
+        options: (s) => [...(scopeKind(s) === 'building' ? [{ v: 'self', label: 'this building' }] : []), ...defOpts(STOCK_BUILDINGS)],
       },
       { key: 'res', type: 'enum', options: () => RES },
       { key: 'op', type: 'enum', options: () => OP },
@@ -192,6 +215,39 @@ const CONDITIONS: Schema[] = [
     allowed: anyScope,
     make: () => ({ kind: 'time', op: '>=', s: 180 }),
   },
+  {
+    kind: 'supply',
+    role: 'cond',
+    head: 'supply left',
+    tokens: [{ f: 'op' }, { f: 'n' }],
+    fields: [
+      { key: 'op', type: 'enum', options: () => OP },
+      { key: 'n', type: 'number', min: -50, max: 50, step: 1 },
+    ],
+    help: 'Supply cap minus supply used (queued units count). Supply Depots raise the cap by 8.',
+    allowed: anyScope,
+    make: () => ({ kind: 'supply', op: '<', n: 4 }),
+  },
+  {
+    kind: 'sieged',
+    role: 'cond',
+    head: ['sieged', 'not sieged'],
+    tokens: [],
+    fields: [],
+    help: 'Whether this Siege Tank is deployed (or deploying).',
+    allowed: canSiege,
+    make: () => ({ kind: 'sieged', not: false }),
+  },
+  {
+    kind: 'addon',
+    role: 'cond',
+    head: 'add-on is',
+    tokens: [{ f: 'is' }],
+    fields: [{ key: 'is', type: 'enum', options: () => [{ v: 'none', label: 'none' }, ...ADDONS] }],
+    help: "This building's add-on (one being built counts).",
+    allowed: hasAddons,
+    make: () => ({ kind: 'addon', is: 'none' }),
+  },
 ];
 
 // ---- Actions --------------------------------------------------------------------------------
@@ -207,7 +263,7 @@ const ACTIONS: Schema[] = [
       {
         key: 'to',
         type: 'enum',
-        options: () => [{ v: 'commandCenter', label: 'Home' }, { v: 'needy', label: 'whatever needs it' }, ...defOpts(PRODUCTION)],
+        options: () => [{ v: 'commandCenter', label: 'Command Center' }, { v: 'needy', label: 'whatever needs it' }, ...defOpts(PRODUCTION)],
       },
     ],
     help: 'Harvest the least-busy field near the drop-off, and carry loads there. Keeps going.',
@@ -221,7 +277,7 @@ const ACTIONS: Schema[] = [
     tokens: [{ f: 'res' }, 'from', { f: 'from' }, 'to', { f: 'to' }],
     fields: [
       { key: 'res', type: 'enum', options: () => RES },
-      { key: 'from', type: 'enum', options: () => defOpts(BUILDINGS) },
+      { key: 'from', type: 'enum', options: () => defOpts(STOCK_BUILDINGS) },
       {
         key: 'to',
         type: 'enum',
@@ -302,6 +358,46 @@ const ACTIONS: Schema[] = [
     allowed: (s) => s === 'base',
     make: () => ({ kind: 'setPosture', to: 'offense' }),
   },
+  {
+    kind: 'siege',
+    role: 'act',
+    head: 'siege up',
+    tokens: [],
+    fields: [],
+    help: 'Deploy into siege mode: long range splash, but it can’t move. Takes 2 seconds.',
+    allowed: canSiege,
+    make: () => ({ kind: 'siege' }),
+  },
+  {
+    kind: 'unsiege',
+    role: 'act',
+    head: 'pack up',
+    tokens: [],
+    fields: [],
+    help: 'Leave siege mode so the tank can move again. Takes 2 seconds.',
+    allowed: canSiege,
+    make: () => ({ kind: 'unsiege' }),
+  },
+  {
+    kind: 'stim',
+    role: 'act',
+    head: 'stim',
+    tokens: [],
+    fields: [],
+    help: 'Stimpack: costs HP (10 Marine, 20 Marauder) for 8 seconds of 50% faster moving and shooting.',
+    allowed: canStim,
+    make: () => ({ kind: 'stim' }),
+  },
+  {
+    kind: 'addon',
+    role: 'act',
+    head: 'build add-on',
+    tokens: [{ f: 'def' }],
+    fields: [{ key: 'def', type: 'enum', options: () => ADDONS }],
+    help: 'Build a Tech Lab (unlocks advanced units) or Reactor (trains two at once) onto this building, paid from its own stock.',
+    allowed: hasAddons,
+    make: () => ({ kind: 'addon', def: 'techLab' }),
+  },
 ];
 
 // ---- Build-order steps ------------------------------------------------------------------------
@@ -349,6 +445,19 @@ const STEPS: Schema[] = [
     help: 'Switch the base-wide posture.',
     allowed: anyScope,
     make: () => ({ kind: 'setPosture', to: 'offense' }),
+  },
+  {
+    kind: 'addon',
+    role: 'step',
+    head: 'add',
+    tokens: [{ f: 'def' }, 'to', { f: 'on' }],
+    fields: [
+      { key: 'def', type: 'enum', options: () => ADDONS },
+      { key: 'on', type: 'enum', options: () => defOpts(PRODUCTION) },
+    ],
+    help: 'Build an add-on onto one building of that type that has none (waits until one can pay for it).',
+    allowed: anyScope,
+    make: () => ({ kind: 'addon', def: 'techLab', on: 'barracks' }),
   },
 ];
 
@@ -410,7 +519,13 @@ function sanitizeBlock<T>(role: Role, raw: unknown, scope: ScopeId): T | null {
     const v = b[f.key];
     if (f.type === 'number') {
       if (typeof v === 'number' && isFinite(v)) out[f.key] = Math.min(f.max, Math.max(f.min, v));
-    } else if (f.options(scope).some((o) => o.v === v)) out[f.key] = v;
+    } else {
+      const opts = f.options(scope);
+      // Old saved programs used earlier names (home, gatherer, ship, ...): map them over.
+      const alias = typeof v === 'string' ? DEF_ALIASES[v] : undefined;
+      if (opts.some((o) => o.v === v)) out[f.key] = v;
+      else if (alias && opts.some((o) => o.v === alias)) out[f.key] = alias;
+    }
   }
   if (Array.isArray(sc.head)) out.not = b.not === true;
   if (sc.kind === 'wait' && role === 'step') {
@@ -425,8 +540,11 @@ export function sanitizeProgram(raw: unknown): Program {
   const p = emptyProgram();
   if (!raw || typeof raw !== 'object') return p;
   const r = raw as Record<string, any>;
+  // Old scope names (gatherer, infantryTraining, ...) map onto the new ones.
+  const rawRules: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries((r.rules ?? {}) as Record<string, unknown>)) rawRules[DEF_ALIASES[k] ?? k] = v;
   for (const scope of ALL_SCOPES) {
-    const list = r.rules?.[scope];
+    const list = rawRules[scope] as any[] | undefined;
     if (!Array.isArray(list)) continue;
     const rules: Rule[] = [];
     for (const item of list) {
@@ -452,7 +570,7 @@ export function sanitizeProgram(raw: unknown): Program {
     }
   if (r.layout && typeof r.layout === 'object') {
     if (Array.isArray(r.layout.slots))
-      p.layout.slots = r.layout.slots.filter(
+      p.layout.slots = r.layout.slots.map((s: any) => ({ ...s, def: DEF_ALIASES[s?.def] ?? s?.def })).filter(
         (s: any) => BUILDINGS.includes(s?.def) && typeof s.dx === 'number' && typeof s.dy === 'number',
       );
     const m = r.layout.muster;
@@ -462,16 +580,27 @@ export function sanitizeProgram(raw: unknown): Program {
 }
 
 export const DEFAULT_LAYOUT = (): Program['layout'] => ({
+  // Relative to the main Command Center. Production columns leave room on the right for add-ons.
   slots: [
-    { def: 'barracks', dx: 6, dy: -6 },
-    { def: 'barracks', dx: 6, dy: 6 },
-    { def: 'factory', dx: 11, dy: -3 },
-    { def: 'factory', dx: 11, dy: 3.5 },
-    { def: 'starport', dx: 1, dy: -11 },
-    { def: 'starport', dx: 1, dy: 11 },
+    { def: 'supplyDepot', dx: -6, dy: -12 },
+    { def: 'supplyDepot', dx: -3.5, dy: -12 },
+    { def: 'supplyDepot', dx: -1, dy: -12 },
+    { def: 'supplyDepot', dx: 1.5, dy: -12 },
+    { def: 'supplyDepot', dx: -6, dy: 12 },
+    { def: 'supplyDepot', dx: -3.5, dy: 12 },
+    { def: 'supplyDepot', dx: -1, dy: 12 },
+    { def: 'supplyDepot', dx: 1.5, dy: 12 },
+    { def: 'barracks', dx: 7, dy: -5 },
+    { def: 'barracks', dx: 7, dy: 4 },
+    { def: 'barracks', dx: 7, dy: -10 },
+    { def: 'factory', dx: 14, dy: -5 },
+    { def: 'factory', dx: 14, dy: 4 },
+    { def: 'starport', dx: 14, dy: -10 },
+    { def: 'starport', dx: 7, dy: 9 },
+    { def: 'starport', dx: 14, dy: 9 },
     { def: 'commandCenter', dx: 19.5, dy: 14.5 },
   ],
-  muster: { dx: 17, dy: 0 },
+  muster: { dx: 20, dy: -0.5 },
 });
 
 export function emptyProgram(): Program {

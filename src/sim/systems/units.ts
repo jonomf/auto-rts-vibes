@@ -228,7 +228,9 @@ export function acquire(world: World, u: Entity): Entity | undefined {
   const atk = weaponOf(u);
   if (!atk) return undefined;
   const min = atk.minRange ?? 0;
-  return world.nearest(u, (e) => canHit(u, e) && (min === 0 || edgeDist(u, e) >= min), atk.range + ACQUIRE_BONUS);
+  // Defenders holding a post react from further away (an "aggro radius"), so melee units engage too.
+  const reach = atk.range + (u.leash ? Math.max(ACQUIRE_BONUS, 6) : ACQUIRE_BONUS);
+  return world.nearest(u, (e) => canHit(u, e) && (min === 0 || edgeDist(u, e) >= min), reach);
 }
 
 /** Close to weapon range, then fire on cooldown. */

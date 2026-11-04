@@ -29,6 +29,8 @@ export type Attack = {
   minRange?: number;
   /** Slows the target's movement (Marauder concussive shells). */
   slow?: number;
+  /** The attacker dies when it hits (Baneling). */
+  suicide?: boolean;
 };
 
 export type AddonId = 'techLab' | 'reactor';
@@ -57,6 +59,7 @@ export type DefId =
   | 'gasSource'
   // Enemy-only (scenarios)
   | 'zergling'
+  | 'baneling'
   | 'bunker'
   | 'missileTurret'
   | 'dummy'
@@ -412,6 +415,26 @@ export const DEFS: Record<DefId, Def> = {
     tags: ['light', 'bio'],
     speed: 5.4,
     attack: { range: 0.15, damage: 5, cooldown: 0.5, hitsGround: true, hitsAir: false },
+    enemyOnly: true,
+  },
+  baneling: {
+    id: 'baneling',
+    name: 'Baneling',
+    category: 'unit',
+    radius: 0.35,
+    hp: 30,
+    tags: ['light', 'bio'],
+    speed: 4.1,
+    attack: {
+      range: 0.25,
+      damage: 16,
+      bonus: { vs: 'light', damage: 19 },
+      cooldown: 1,
+      hitsGround: true,
+      hitsAir: false,
+      splash: { full: 1.2, radius: 2.2 },
+      suicide: true,
+    },
     enemyOnly: true,
   },
   bunker: {

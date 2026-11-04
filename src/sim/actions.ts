@@ -320,4 +320,5 @@ export function dealDamage(world: World, attacker: Entity, target: Entity): void
     }
   }
   if (target.hp <= 0) world.kill(target);
+  if (atk.suicide) world.kill(attacker);
 }
