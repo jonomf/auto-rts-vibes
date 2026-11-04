@@ -1682,3 +1682,25 @@ em {
   height: 13px;
   color: var(--player);
 }
+
+/* Top bar: the tech-tree controls made the right side wider; never let it squeeze the brand into the clock. */
+.brand,
+.topbar .right {
+  flex: none;
+}
+.topbar .center {
+  overflow: hidden;
+}
+.topbar .center > * {
+  white-space: nowrap;
+}
+.objective {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 1320px) {
+  .brand {
+    display: none;
+  }
+}
