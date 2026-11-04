@@ -95,9 +95,9 @@ Clear time, units lost in brackets; "—" = targets still standing at 8:00.
 
 ## Play any prototype
 
-`https://jonomf.github.io/auto-rts-vibes/?rules=classic&scenario=armor&program=mech&hands=on`
+`https://jonomf.github.io/auto-rts-vibes/?rules=classic&scenario=armor&program=mech`
 
 - `rules`: `classic`, `streamlined`
 - `scenario`: `range`, `outpost`, `swarm`, `armor`, `air`
 - `program`: `starter`, `bio`, `mech`, `air`
-- `hands=on`: the program plays itself from the start
+- `hands=on`: allow direct control too (by default the program plays alone, hands-off)
