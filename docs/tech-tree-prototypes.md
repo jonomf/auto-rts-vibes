@@ -60,10 +60,10 @@ Clear time, units lost in brackets; "—" = targets still standing at 8:00.
    they connect. Counters fall out of armor, attributes and splash.
 2. **Classic punishes a forgotten supply rule completely.** Delete the depot rule and every
    program sits supply-blocked for ~6 of 8 minutes and clears nothing. Under Streamlined
-   the same program still wins, just 40–60 s slower (Mech Armor 3:29 → 5:29).
+   the same program still wins everywhere it won before, at most 2 minutes slower (Mech Armor 3:29 → 5:29).
 3. **Classic rewards ability rules; Streamlined makes them redundant.** Without siege rules
    Classic Mech goes from 3:18 to 4:10 on Outpost and fails the Armor line. Under
-   Streamlined the same omission costs 4–9 s.
+   Streamlined the same omission costs 4–13 s.
 4. **Streamlined is not strictly easier.** Auto-stim and in-place add-ons barely change
    Bio's result, and Classic Mech is faster on Outpost (3:18 vs 3:25). Auto-siege makes
    tanks deploy at the first target in range, which helps on the Armor line (3:29) and
