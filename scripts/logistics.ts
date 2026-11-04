@@ -1,5 +1,5 @@
 /** Logistics experiment: how should income reach the production buildings? */
-import { runMatch } from './lab';
+import { runMatch } from '../src/lab/run';
 import { PRESETS } from '../src/automation/presets';
 import { RULESETS } from '../src/sim/ruleset';
 import type { Program, Rule } from '../src/automation/types';

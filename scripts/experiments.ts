@@ -3,7 +3,7 @@
  *   bun scripts/experiments.ts   -> lab/results.json (+ a summary on stdout)
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { runMatch, type LabResult } from './lab';
+import { runMatch, type LabResult } from '../src/lab/run';
 import { PRESETS, type PresetId } from '../src/automation/presets';
 import { RULESETS } from '../src/sim/ruleset';
 import { SCENARIOS, type ScenarioId } from '../src/sim/scenario';

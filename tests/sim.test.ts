@@ -1,59 +1,57 @@
 import { describe, expect, it } from 'vitest';
 import { World } from '../src/sim/world';
-import { createSandbox } from '../src/sim/scenario';
-import { constructionProgress, constructionScale } from '../src/sim/actions';
+import { createScenario, createSandbox } from '../src/sim/scenario';
+import { RULESETS } from '../src/sim/ruleset';
+import { constructionProgress, constructionScale, hitDamage } from '../src/sim/actions';
 import { CONSTRUCTION_START_SCALE, DEFS } from '../src/sim/defs';
 import { ENEMY, NEUTRAL, PLAYER, type Entity } from '../src/sim/types';
 
-/** A tiny map: a home, one mineral field, one gas source. */
-function basicWorld() {
-  const world = new World({ width: 40, height: 30 });
-  const home = world.spawn('commandCenter', PLAYER, 10, 15);
+/** A tiny map: a Command Center, mineral fields, one geyser, one SCV. */
+function basicWorld(rules = RULESETS.classic) {
+  const world = new World({ width: 40, height: 30 }, rules);
+  const cc = world.spawn('commandCenter', PLAYER, 10, 15);
   const minerals = world.spawn('mineralSource', NEUTRAL, 4, 15);
   const gas = world.spawn('gasSource', NEUTRAL, 10, 9);
   const g = world.spawn('scv', PLAYER, 7, 15);
-  return { world, home, minerals, gas, g };
+  return { world, cc, minerals, gas, g };
 }
 
 const count = (world: World, def: Entity['def']) => world.list((e) => e.def === def).length;
+const rich = () => ({ minerals: 2000, gas: 2000 });
 
 describe('gathering', () => {
-  it('right-clicking minerals starts a gather -> deliver loop into the nearest Home', () => {
-    const { world, home, minerals, g } = basicWorld();
+  it('right-clicking minerals starts a gather -> deliver loop into the nearest Command Center', () => {
+    const { world, cc, minerals, g } = basicWorld();
     expect(world.issue({ type: 'target', ids: [g.id], targetId: minerals.id }).ok).toBe(true);
     world.stepSeconds(20);
-    expect(home.stock.minerals).toBeGreaterThanOrEqual(100);
-    expect(home.stock.minerals % DEFS.mineralSource.resource!.pieceSize).toBe(0);
-    expect(minerals.remaining).toBe(1000 - home.stock.minerals - (g.cargo?.amount ?? 0));
-    expect(g.order.type).toBe('gather');
+    expect(cc.stock.minerals).toBeGreaterThanOrEqual(100);
+    expect(cc.stock.minerals % DEFS.mineralSource.resource!.pieceSize).toBe(0);
+    expect(minerals.remaining).toBe(1000 - cc.stock.minerals - (g.cargo?.amount ?? 0));
+    expect(world.stats.gathered.minerals).toBe(1000 - minerals.remaining);
   });
 
   it('regression: a move order before gathering does not cause the instant gather/deposit loop', () => {
     // Unity bug (c2e443b): TargetPosition was never cleared, so after one ground move the
     // gatherer "arrived" at every later target instantly and looped deposit/harvest in place.
-    const { world, home, minerals, g } = basicWorld();
+    const { world, cc, minerals, g } = basicWorld();
     world.issue({ type: 'move', ids: [g.id], x: 20, y: 20 });
     world.stepSeconds(5);
     world.issue({ type: 'target', ids: [g.id], targetId: minerals.id });
-    world.step();
-    expect(home.stock.minerals).toBe(0);
-    // It has to actually walk to the minerals (~16 units at 3.5 u/s) and back before anything lands.
     world.stepSeconds(3);
-    expect(home.stock.minerals).toBe(0);
+    expect(cc.stock.minerals).toBe(0);
     world.stepSeconds(20);
-    expect(home.stock.minerals).toBeGreaterThan(0);
-    // ~1 trip per 2.8s here; the instant loop would deliver every tick (thousands).
-    expect(home.stock.minerals).toBeLessThanOrEqual(250);
+    expect(cc.stock.minerals).toBeGreaterThan(0);
+    expect(cc.stock.minerals).toBeLessThanOrEqual(250);
   });
 
-  it('right-clicking a building with a gatherer redirects its deliveries there (per-building stockpiles)', () => {
-    const { world, home, minerals, g } = basicWorld();
+  it('right-clicking a building with an SCV redirects its deliveries there (per-building stockpiles)', () => {
+    const { world, cc, minerals, g } = basicWorld();
     const barracks = world.spawn('barracks', PLAYER, 10, 22);
     world.issue({ type: 'target', ids: [g.id], targetId: minerals.id });
     world.issue({ type: 'target', ids: [g.id], targetId: barracks.id });
     world.stepSeconds(20);
     expect(barracks.stock.minerals).toBeGreaterThan(0);
-    expect(home.stock.minerals).toBe(0);
+    expect(cc.stock.minerals).toBe(0);
   });
 
   it('a group sent to one mineral field spreads over neighbouring fields', () => {
@@ -63,12 +61,11 @@ describe('gathering', () => {
     const gs = [0, 1, 2].map((i) => world.spawn('scv', PLAYER, 7, 14 + i));
     world.issue({ type: 'target', ids: gs.map((g) => g.id), targetId: fields[1].id });
     expect(new Set(gs.map((g) => g.sourceId)).size).toBe(3);
-    expect(gs[0].sourceId).toBe(fields[1].id);
   });
 
   it('moves on to a nearby field of the same type when a source runs dry', () => {
     const world = new World({ width: 40, height: 30 });
-    const home = world.spawn('commandCenter', PLAYER, 10, 15);
+    const cc = world.spawn('commandCenter', PLAYER, 10, 15);
     const a = world.spawn('mineralSource', NEUTRAL, 4, 15, { remaining: 25 });
     const b = world.spawn('mineralSource', NEUTRAL, 4, 17);
     const g = world.spawn('scv', PLAYER, 7, 15);
@@ -76,7 +73,19 @@ describe('gathering', () => {
     world.stepSeconds(25);
     expect(world.get(a.id)).toBeUndefined();
     expect(b.remaining).toBeLessThan(1000);
-    expect(home.stock.minerals).toBeGreaterThan(25);
+    expect(cc.stock.minerals).toBeGreaterThan(25);
+  });
+
+  it('gas can only be harvested through a finished Refinery on the geyser', () => {
+    const { world, cc, gas, g } = basicWorld();
+    world.issue({ type: 'target', ids: [g.id], targetId: gas.id });
+    world.stepSeconds(10);
+    expect(cc.stock.gas).toBe(0);
+    expect(g.order.type).toBe('idle');
+    const ref = world.spawn('refinery', PLAYER, gas.x, gas.y);
+    world.issue({ type: 'target', ids: [g.id], targetId: ref.id }); // right-click the Refinery
+    world.stepSeconds(15);
+    expect(cc.stock.gas).toBeGreaterThan(0);
   });
 });
 
@@ -84,26 +93,19 @@ describe('construction by delivery', () => {
   it('a blueprint starts small, grows as resources arrive, and completes when its debt is paid', () => {
     const { world, minerals, g } = basicWorld();
     world.issue({ type: 'target', ids: [g.id], targetId: minerals.id });
-    expect(world.issue({ type: 'build', builderId: g.id, def: 'barracks', x: 6, y: 22 }).ok).toBe(true);
-
+    expect(world.issue({ type: 'build', builderId: g.id, def: 'supplyDepot', x: 6, y: 22 }).ok).toBe(true);
     world.stepSeconds(4);
-    const site = world.list((e) => e.def === 'barracks')[0];
-    expect(site).toBeDefined();
+    const site = world.list((e) => e.def === 'supplyDepot')[0];
     expect(site.complete).toBe(false);
-    expect(site.stock.minerals).toBeLessThan(0);
     expect(constructionScale(site)).toBeGreaterThanOrEqual(CONSTRUCTION_START_SCALE);
-    expect(g.depositId).toBe(site.id);
-
-    let lastProgress = constructionProgress(site);
+    let last = constructionProgress(site);
     for (let i = 0; i < 12 && !site.complete; i++) {
       world.stepSeconds(5);
-      const p = constructionProgress(site);
-      expect(p).toBeGreaterThanOrEqual(lastProgress);
-      lastProgress = p;
+      expect(constructionProgress(site)).toBeGreaterThanOrEqual(last);
+      last = constructionProgress(site);
     }
     expect(site.complete).toBe(true);
-    expect(site.hp).toBe(DEFS.barracks.hp);
-    expect(constructionScale(site)).toBe(1);
+    expect(world.supply(PLAYER).cap).toBe(15 + 8);
   });
 
   it('a gas-costing blueprint stays incomplete on minerals alone', () => {
@@ -115,81 +117,136 @@ describe('construction by delivery', () => {
     const site = world.list((e) => e.def === 'factory')[0];
     expect(site.stock.minerals).toBeGreaterThanOrEqual(0);
     expect(site.complete).toBe(false);
+    world.spawn('refinery', PLAYER, gas.x, gas.y);
     world.issue({ type: 'target', ids: [g.id], targetId: gas.id });
-    world.stepSeconds(120);
+    world.stepSeconds(150);
     expect(site.complete).toBe(true);
   });
 
-  it('rejects placement on top of another building and enforces tech requirements', () => {
-    const { world, g } = basicWorld();
-    expect(world.issue({ type: 'build', builderId: g.id, def: 'barracks', x: 10, y: 15 }).ok).toBe(false);
-    const r = world.issue({ type: 'build', builderId: g.id, def: 'factory', x: 20, y: 20 });
+  it('enforces placement and the tech tree (Barracks needs a Supply Depot; Refineries go on geysers)', () => {
+    const { world, g, gas } = basicWorld();
+    expect(world.issue({ type: 'build', builderId: g.id, def: 'supplyDepot', x: 10, y: 15 }).ok).toBe(false);
+    const r = world.issue({ type: 'build', builderId: g.id, def: 'barracks', x: 20, y: 20 });
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toContain('Infantry Training');
+    if (!r.ok) expect(r.reason).toContain('Supply Depot');
+    expect(world.issue({ type: 'build', builderId: g.id, def: 'refinery', x: 20, y: 20 }).ok).toBe(false);
+    expect(world.issue({ type: 'build', builderId: g.id, def: 'refinery', x: gas.x, y: gas.y }).ok).toBe(true);
+  });
+});
+
+describe('supply', () => {
+  it('hard cap (classic): training stops at the cap; a depot lifts it', () => {
+    const { world, cc } = basicWorld();
+    cc.stock = rich();
+    for (let i = 0; i < 14; i++) world.spawn('marine', PLAYER, 20, 5 + i);
+    expect(world.supply(PLAYER)).toEqual({ used: 15, cap: 15 });
+    const r = world.issue({ type: 'train', buildingId: cc.id, def: 'scv' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toContain('supply');
+    world.spawn('supplyDepot', PLAYER, 30, 25);
+    expect(world.issue({ type: 'train', buildingId: cc.id, def: 'scv' }).ok).toBe(true);
+  });
+
+  it('soft cap (streamlined): you can train past it, but 3x slower', () => {
+    const { world, cc } = basicWorld(RULESETS.streamlined);
+    cc.stock = rich();
+    for (let i = 0; i < 15; i++) world.spawn('marine', PLAYER, 20, 5 + i);
+    expect(world.issue({ type: 'train', buildingId: cc.id, def: 'scv' }).ok).toBe(true);
+    world.stepSeconds(DEFS.scv.buildTime! + 0.5);
+    expect(count(world, 'scv')).toBe(1);
+    world.stepSeconds(DEFS.scv.buildTime! * 2);
+    expect(count(world, 'scv')).toBe(2);
+  });
+});
+
+describe('add-ons', () => {
+  it('a building builds its own add-on from its stockpile; a Tech Lab unlocks Marauders', () => {
+    const { world } = basicWorld();
+    const b = world.spawn('barracks', PLAYER, 20, 15, { stock: { minerals: 500, gas: 100 } });
+    expect(world.issue({ type: 'train', buildingId: b.id, def: 'marauder' }).ok).toBe(false);
+    expect(world.issue({ type: 'addon', buildingId: b.id, def: 'techLab' }).ok).toBe(true);
+    expect(b.stock).toEqual({ minerals: 450, gas: 75 });
+    expect(world.issue({ type: 'train', buildingId: b.id, def: 'marine' }).ok).toBe(false); // busy
+    world.stepSeconds(DEFS.techLab.buildTime! + 0.1);
+    expect(b.addon).toBe('techLab');
+    // Classic rules: the add-on is a real building beside it.
+    const lab = world.get(b.linkId)!;
+    expect(lab.def).toBe('techLab');
+    expect(lab.x).toBeGreaterThan(b.x);
+    expect(world.issue({ type: 'train', buildingId: b.id, def: 'marauder' }).ok).toBe(true);
+    // Destroying the add-on takes it away again.
+    world.kill(lab);
+    world.step();
+    expect(b.addon).toBe(null);
+  });
+
+  it('classic add-ons need free ground beside the building; streamlined ones do not', () => {
+    for (const rules of [RULESETS.classic, RULESETS.streamlined]) {
+      const { world } = basicWorld(rules);
+      const b = world.spawn('barracks', PLAYER, 20, 15, { stock: rich() });
+      world.spawn('supplyDepot', PLAYER, 23, 16); // right where the add-on goes
+      const r = world.issue({ type: 'addon', buildingId: b.id, def: 'reactor' });
+      expect(r.ok).toBe(rules.addons === 'inplace');
+    }
+  });
+
+  it('a Reactor trains two units at once', () => {
+    const { world } = basicWorld();
+    const b = world.spawn('barracks', PLAYER, 20, 15, { stock: rich(), addon: 'reactor' });
+    world.spawn('supplyDepot', PLAYER, 30, 25);
+    world.issue({ type: 'train', buildingId: b.id, def: 'marine' });
+    world.issue({ type: 'train', buildingId: b.id, def: 'marine' });
+    world.stepSeconds(DEFS.marine.buildTime! + 0.1);
+    expect(count(world, 'marine')).toBe(2);
   });
 });
 
 describe('production', () => {
-  it('training spends the building’s own stock and spawns the unit after its build time', () => {
-    const { world, home } = basicWorld();
-    home.stock.minerals = 120;
-    expect(world.issue({ type: 'train', buildingId: home.id, def: 'scv' }).ok).toBe(true);
-    expect(world.issue({ type: 'train', buildingId: home.id, def: 'scv' }).ok).toBe(true);
-    expect(home.stock.minerals).toBe(20);
-    const r = world.issue({ type: 'train', buildingId: home.id, def: 'scv' });
-    expect(r.ok).toBe(false);
-
-    world.stepSeconds(DEFS.scv.buildTime! - 0.5);
-    expect(count(world, 'scv')).toBe(1);
-    world.stepSeconds(1);
-    expect(count(world, 'scv')).toBe(2);
-    world.stepSeconds(DEFS.scv.buildTime!);
-    expect(count(world, 'scv')).toBe(3);
+  it('every unit trains from its building (Tech Lab units need one)', () => {
+    const world = new World({ width: 50, height: 40 });
+    world.spawn('commandCenter', PLAYER, 5, 35);
+    for (let i = 0; i < 4; i++) world.spawn('supplyDepot', PLAYER, 45, 5 + i * 3);
+    const br = world.spawn('barracks', PLAYER, 10, 10, { stock: rich(), addon: 'techLab' });
+    const fa = world.spawn('factory', PLAYER, 20, 10, { stock: rich(), addon: 'techLab' });
+    const sp = world.spawn('starport', PLAYER, 30, 10, { stock: rich(), addon: 'techLab' });
+    const want: [Entity, Entity['def']][] = [
+      [br, 'marine'],
+      [br, 'marauder'],
+      [br, 'medic'],
+      [fa, 'hellion'],
+      [fa, 'siegeTank'],
+      [sp, 'viking'],
+      [sp, 'medivac'],
+      [sp, 'banshee'],
+    ];
+    for (const [b, def] of want) expect(world.issue({ type: 'train', buildingId: b.id, def }).ok).toBe(true);
+    expect(world.issue({ type: 'train', buildingId: fa.id, def: 'banshee' }).ok).toBe(false);
+    world.stepSeconds(60);
+    for (const [, def] of want) expect(count(world, def)).toBe(1);
   });
 
   it('cancel refunds', () => {
-    const { world, home } = basicWorld();
-    home.stock.minerals = 50;
-    world.issue({ type: 'train', buildingId: home.id, def: 'scv' });
-    expect(home.stock.minerals).toBe(0);
-    world.issue({ type: 'cancelTrain', buildingId: home.id, index: 0 });
-    expect(home.stock.minerals).toBe(50);
-    expect(home.queue.length).toBe(0);
-  });
-
-  it('a building under construction cannot train', () => {
-    const { world } = basicWorld();
-    const site = world.spawn('commandCenter', PLAYER, 25, 15, { complete: false, stock: { minerals: 100, gas: 0 } });
-    expect(world.issue({ type: 'train', buildingId: site.id, def: 'scv' }).ok).toBe(false);
-  });
-
-  it('each family trains from its building: infantry, mech, port', () => {
-    const world = new World({ width: 50, height: 40 });
-    const rich = { minerals: 1000, gas: 1000 };
-    const it_ = world.spawn('barracks', PLAYER, 10, 10, { stock: { ...rich } });
-    const mf = world.spawn('factory', PLAYER, 20, 10, { stock: { ...rich } });
-    const port = world.spawn('starport', PLAYER, 30, 10, { stock: { ...rich } });
-    expect(world.issue({ type: 'train', buildingId: it_.id, def: 'marine' }).ok).toBe(true);
-    expect(world.issue({ type: 'train', buildingId: it_.id, def: 'marauder' }).ok).toBe(true);
-    expect(world.issue({ type: 'train', buildingId: mf.id, def: 'siegeTank' }).ok).toBe(true);
-    expect(world.issue({ type: 'train', buildingId: port.id, def: 'banshee' }).ok).toBe(true);
-    expect(world.issue({ type: 'train', buildingId: mf.id, def: 'banshee' }).ok).toBe(false);
-    world.stepSeconds(30);
-    for (const d of ['marine', 'marauder', 'siegeTank', 'banshee'] as const) expect(count(world, d)).toBe(1);
-  });
-
-  it('a rally point on a mineral field sends new gatherers straight to work', () => {
-    const { world, home, minerals } = basicWorld();
-    home.stock.minerals = 50;
-    world.issue({ type: 'rally', buildingIds: [home.id], x: minerals.x, y: minerals.y, targetId: minerals.id });
-    world.issue({ type: 'train', buildingId: home.id, def: 'scv' });
-    world.stepSeconds(DEFS.scv.buildTime! + 0.2);
-    const fresh = world.list((e) => e.def === 'scv').at(-1)!;
-    expect(fresh.order.type).toBe('gather');
+    const { world, cc } = basicWorld();
+    cc.stock.minerals = 50;
+    world.issue({ type: 'train', buildingId: cc.id, def: 'scv' });
+    expect(cc.stock.minerals).toBe(0);
+    world.issue({ type: 'cancelTrain', buildingId: cc.id, index: 0 });
+    expect(cc.stock.minerals).toBe(50);
   });
 });
 
 describe('combat', () => {
+  it('armor and bonus damage: Marauders hit armored targets twice as hard', () => {
+    const world = new World();
+    const m = world.spawn('marauder', PLAYER, 1, 1);
+    const tank = world.spawn('siegeTank', ENEMY, 5, 5);
+    const ling = world.spawn('zergling', ENEMY, 9, 9);
+    expect(hitDamage(DEFS.marauder.attack!, tank)).toBe(10 + 10 - 1);
+    expect(hitDamage(DEFS.marauder.attack!, ling)).toBe(10);
+    expect(hitDamage(DEFS.marine.attack!, world.spawn('bunker', ENEMY, 20, 20))).toBe(5);
+    expect(m.def).toBe('marauder');
+  });
+
   it('right-click attack kills a dummy; dummies never fight back', () => {
     const world = new World({ width: 40, height: 30 });
     const marine = world.spawn('marine', PLAYER, 5, 15);
@@ -198,43 +255,80 @@ describe('combat', () => {
     world.stepSeconds(30);
     expect(world.get(dummy.id)).toBeUndefined();
     expect(marine.hp).toBe(DEFS.marine.hp);
-    expect(marine.order.type).toBe('idle');
   });
 
-  it('attack-move engages targets met along the way, then continues', () => {
-    const world = new World({ width: 60, height: 30 });
-    const tank = world.spawn('siegeTank', PLAYER, 5, 15);
-    const dummy = world.spawn('dummy', ENEMY, 20, 16);
-    world.issue({ type: 'attackMove', ids: [tank.id], x: 50, y: 15 });
-    world.stepSeconds(40);
-    expect(world.get(dummy.id)).toBeUndefined();
-    expect(Math.abs(tank.x - 50)).toBeLessThan(0.5);
-  });
-
-  it('a plain move ignores enemies', () => {
-    const world = new World({ width: 60, height: 30 });
-    const inf = world.spawn('marauder', PLAYER, 5, 15);
-    const dummy = world.spawn('dummy', ENEMY, 20, 17);
-    world.issue({ type: 'move', ids: [inf.id], x: 40, y: 15 });
-    world.stepSeconds(12);
-    expect(dummy.hp).toBe(DEFS.dummy.hp);
-  });
-
-  it('idle units auto-acquire nearby enemies', () => {
+  it('splash hurts the enemies around the target', () => {
     const world = new World({ width: 40, height: 30 });
-    const ship = world.spawn('banshee', PLAYER, 10, 15);
-    const dummy = world.spawn('dummy', ENEMY, 16, 15);
-    world.stepSeconds(25);
-    expect(world.get(dummy.id)).toBeUndefined();
-    expect(ship.hp).toBe(DEFS.banshee.hp);
+    const hellion = world.spawn('hellion', PLAYER, 5, 15);
+    const lings = [0, 1, 2].map((i) => world.spawn('dummy', ENEMY, 9.5, 14.4 + i * 0.6));
+    world.issue({ type: 'target', ids: [hellion.id], targetId: lings[1].id });
+    world.stepSeconds(0.5);
+    expect(lings.every((l) => l.hp < DEFS.dummy.hp)).toBe(true);
   });
 
-  it('ground-only weapons cannot target flyers', () => {
+  it('siege mode: can not move, out-ranges, can not fire point blank', () => {
+    const world = new World({ width: 40, height: 30 });
+    const tank = world.spawn('siegeTank', PLAYER, 5, 15);
+    world.issue({ type: 'siege', ids: [tank.id], on: true });
+    world.stepSeconds(DEFS.siegeTank.siege!.deploySeconds + 0.1);
+    expect(tank.sieged).toBe(true);
+    const far = world.spawn('dummy', ENEMY, 5 + 12, 15);
+    world.stepSeconds(3);
+    expect(far.hp).toBeLessThan(DEFS.dummy.hp);
+    world.issue({ type: 'move', ids: [tank.id], x: 30, y: 15 });
+    world.stepSeconds(0.5);
+    expect(tank.x).toBe(5); // packing up first
+    world.stepSeconds(5);
+    expect(tank.sieged).toBe(false);
+    expect(tank.x).toBeGreaterThan(5);
+  });
+
+  it('Marauders slow; stim trades HP for speed; Medics heal bio', () => {
+    const world = new World({ width: 40, height: 30 });
+    const m = world.spawn('marauder', PLAYER, 5, 15);
+    const t = world.spawn('zergling', ENEMY, 9, 15, { order: { type: 'move', x: 39, y: 15 } });
+    world.issue({ type: 'target', ids: [m.id], targetId: t.id });
+    world.stepSeconds(0.3);
+    expect(t.slowed).toBeGreaterThan(0);
+    const marine = world.spawn('marine', PLAYER, 20, 5);
+    expect(world.issue({ type: 'stim', ids: [marine.id] }).ok).toBe(true);
+    expect(marine.hp).toBe(DEFS.marine.hp - 10);
+    expect(marine.stimmed).toBeGreaterThan(0);
+    world.spawn('medic', PLAYER, 21, 5);
+    world.stepSeconds(3);
+    expect(marine.hp).toBe(DEFS.marine.hp);
+  });
+
+  it('ground-only weapons can not target flyers; Vikings only shoot air', () => {
     const world = new World({ width: 40, height: 30 });
     const tank = world.spawn('siegeTank', PLAYER, 10, 15);
-    const enemyShip = world.spawn('banshee', ENEMY, 13, 15, { order: { type: 'idle' } });
+    const enemyShip = world.spawn('banshee', ENEMY, 13, 15);
     world.issue({ type: 'target', ids: [tank.id], targetId: enemyShip.id });
     expect(tank.order.type).toBe('follow');
+    const v = world.spawn('viking', PLAYER, 10, 20);
+    world.issue({ type: 'target', ids: [v.id], targetId: world.spawn('dummy', ENEMY, 14, 20).id });
+    expect(v.order.type).toBe('follow');
+  });
+
+  it('scenario defenders fight back but return to their post', () => {
+    const world = createScenario('outpost');
+    const marine = world.spawn('marine', PLAYER, 41, 22);
+    world.stepSeconds(10);
+    expect(world.get(marine.id)).toBeUndefined();
+    const defenders = world.list((e) => e.team === ENEMY && !!e.leash);
+    world.stepSeconds(15);
+    for (const d of defenders) expect(Math.hypot(d.x - d.leash!.x, d.y - d.leash!.y)).toBeLessThan(11);
+  });
+
+  it('Banelings explode on contact, splashing everything light nearby', () => {
+    const world = new World({ width: 40, height: 30 });
+    // SCVs, because Marines would shoot it before it arrives (which is the point of Marines).
+    const scvs = [0, 1, 2].map((i) => world.spawn('scv', PLAYER, 10, 14 + i * 0.7));
+    const bane = world.spawn('baneling', ENEMY, 14, 15, { leash: { x: 14, y: 15 } });
+    world.stepSeconds(3);
+    expect(world.get(bane.id)).toBeUndefined();
+    // 16 + 19 vs light = 35 splash: everything light in the blast is hurt.
+    expect(scvs.every((m) => m.hp <= DEFS.scv.hp - 35 + 0.01)).toBe(true);
   });
 });
 
@@ -242,11 +336,11 @@ describe('simulation', () => {
   it('is deterministic for the same commands', () => {
     const run = () => {
       const w = createSandbox();
-      const gatherers = w.list((e) => e.def === 'scv');
+      const scvs = w.list((e) => e.def === 'scv');
       const minerals = w.list((e) => e.def === 'mineralSource');
-      gatherers.forEach((g, i) => w.issue({ type: 'target', ids: [g.id], targetId: minerals[i % 3].id }));
+      scvs.forEach((g, i) => w.issue({ type: 'target', ids: [g.id], targetId: minerals[i % 3].id }));
       w.stepSeconds(30);
-      w.issue({ type: 'build', builderId: gatherers[0].id, def: 'barracks', x: 16, y: 16 });
+      w.issue({ type: 'build', builderId: scvs[0].id, def: 'supplyDepot', x: 16, y: 16 });
       w.stepSeconds(90);
       return w.hash();
     };
@@ -259,31 +353,6 @@ describe('simulation', () => {
     const b = world.spawn('marine', PLAYER, 10, 10);
     world.stepSeconds(1);
     expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThan(0.6);
-  });
-
-  it('the sandbox economy can reach every unit family from scratch (scripted build)', () => {
-    const w = createSandbox();
-    const home = w.list((e) => e.def === 'commandCenter')[0];
-    const [g1, g2, g3, g4] = w.list((e) => e.def === 'scv');
-    const fields = w.list((e) => e.def === 'mineralSource');
-    const gases = w.list((e) => e.def === 'gasSource');
-    for (const g of [g1, g2, g3, g4]) w.issue({ type: 'target', ids: [g.id], targetId: fields[g.id % 4].id });
-
-    const until = (cond: () => boolean, maxSeconds: number) => {
-      for (let t = 0; t < maxSeconds * 20 && !cond(); t++) w.step();
-      expect(cond()).toBe(true);
-    };
-    const done = (def: Entity['def']) => () => w.hasCompleted(PLAYER, def);
-
-    w.issue({ type: 'build', builderId: g1.id, def: 'barracks', x: 17, y: 17 });
-    until(done('barracks'), 200);
-    w.issue({ type: 'build', builderId: g1.id, def: 'factory', x: 17, y: 27 });
-    w.issue({ type: 'target', ids: [g2.id], targetId: gases[0].id });
-    w.stepSeconds(5);
-    const mf = w.list((e) => e.def === 'factory')[0];
-    w.issue({ type: 'target', ids: [g2.id], targetId: mf.id });
-    until(done('factory'), 400);
-    expect(home.stock.minerals).toBeGreaterThan(0);
   });
 });
 

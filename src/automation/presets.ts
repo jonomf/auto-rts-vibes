@@ -61,7 +61,12 @@ const SUPPLY_RULE = () => rule([{ kind: 'supply', op: '<', n: 5 }], { kind: 'bui
 const ATTACK_AT = (army: number) => rule([count('army', '>=', army)], { kind: 'setPosture', to: 'offense' });
 
 function program(order: StepIn[], rules: Program['rules']): Program {
-  return { v: 1, order: order.map(step), rules, layout: DEFAULT_LAYOUT() };
+  const p: Program = { v: 1, order: order.map(step), rules, layout: DEFAULT_LAYOUT() };
+  // Stable ids per program (rule ids show up in unit intents, so they must not depend on call order).
+  let k = 0;
+  for (const list of Object.values(p.rules)) for (const r of list ?? []) r.id = `r${k++}`;
+  for (const st of p.order) st.id = `s${k++}`;
+  return p;
 }
 
 /** A bit of everything: bio from a Tech Lab Barracks, tanks, and Vikings/Medivacs. */
