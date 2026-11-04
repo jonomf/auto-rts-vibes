@@ -168,6 +168,7 @@ export class Editor {
       <div class="tools">
         <button data-cmd="starter" title="Replace the program with a complete example">${this.armedLabel('starter', 'Load starter')}</button>
         <button data-cmd="clear" title="Remove every rule and step">${this.armedLabel('clear', 'Clear')}</button>
+        <button data-cmd="lab" title="Run this program against every scenario, headless">Test in lab</button>
         <button data-cmd="json" title="Copy or paste the program as JSON">JSON</button>
         <button data-cmd="close" class="x" title="Close (P)">✕</button>
       </div>`;
@@ -662,6 +663,9 @@ export class Editor {
       case 'json':
         this.openJson();
         return;
+      case 'lab':
+        (window as unknown as { lab?: { open(): void } }).lab?.open();
+        return;
     }
   }
 
@@ -928,10 +932,8 @@ export class Editor {
 
 function shortName(s: ScopeId): string {
   const short: Record<string, string> = {
-    marine: 'Light',
-    marauder: 'Heavy',
-    barracks: 'Inf. Training',
-    factory: 'Mech Factory',
+    commandCenter: 'CC',
+    siegeTank: 'Tank',
   };
   return short[s] ?? scopeName(s);
 }

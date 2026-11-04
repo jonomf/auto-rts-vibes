@@ -514,6 +514,7 @@ em {
 .help {
   position: absolute;
   inset: 0;
+  z-index: 20;
   background: rgba(5, 8, 10, 0.6);
   display: none;
   place-items: center;
@@ -1561,4 +1562,123 @@ em {
   color: var(--warn);
   font-size: 12px;
   margin: 10px 0 0;
+}
+
+/* Strategy lab */
+.sheet.lab {
+  width: min(1040px, calc(100vw - 32px));
+}
+.labbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0 12px;
+}
+.labbar label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.labbar select {
+  background: #0f161b;
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font: inherit;
+}
+.prog-track {
+  flex: 1;
+  min-width: 120px;
+  height: 6px;
+  border-radius: 3px;
+  background: #1d2830;
+  overflow: hidden;
+}
+.prog-track i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--own);
+}
+.labtable {
+  overflow-x: auto;
+}
+.labtable table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 4px;
+}
+.labtable th {
+  font: 600 11px var(--mono);
+  color: var(--muted);
+  text-align: left;
+  padding: 4px 6px;
+}
+.labtable tbody th b {
+  display: block;
+  color: var(--text);
+  font: 600 12px var(--sans);
+}
+.labtable tbody th small {
+  font: 500 10px var(--mono);
+}
+.labtable td {
+  min-width: 110px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  background: #141c22;
+  border: 1px solid var(--line);
+  vertical-align: top;
+  font-variant-numeric: tabular-nums;
+}
+.labtable td[data-play] {
+  cursor: pointer;
+}
+.labtable td[data-play]:hover {
+  border-color: var(--own);
+}
+.labtable td b {
+  font: 700 14px var(--mono);
+}
+.labtable td small {
+  display: block;
+  font: 500 10.5px var(--mono);
+  color: var(--muted);
+}
+.labtable td.ok {
+  border-color: rgba(98, 224, 122, 0.4);
+}
+.labtable td.ok b {
+  color: var(--hp);
+}
+.labtable td.fail {
+  border-color: rgba(239, 90, 76, 0.35);
+}
+.labtable td.fail b {
+  color: var(--enemy);
+}
+.labtable td.live {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+.labtable .army {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+  font: 600 10px var(--mono);
+  color: var(--muted);
+}
+.labtable .army span {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+.labtable .army svg {
+  width: 13px;
+  height: 13px;
+  color: var(--player);
 }
