@@ -3,8 +3,10 @@
 Starcraft, but very macro. You program your economy and army instead of micro-managing them.
 This repo is the web-native port of the Unity prototype in `docs/rts`, with no engine and no runtime dependencies.
 
-**Status: M2, automation.** By default you have no direct control. Your gatherers stand idle until you write a rule like
-*always → gather minerals → Home*. The goal is to clear the target field as fast as your program can. See [`.plan`](.plan).
+**Status: M2 + tech tree.** By default you have no direct control. Your SCVs stand idle until you write a rule like
+*always → gather minerals → Command Center*. Pick a scenario (an enemy garrison that fights back) and clear it as fast
+as your program can. The Terran tech tree is in: supply, Refineries, Tech Labs and Reactors, Marines through Banshees,
+siege mode, stim, healing. See [`.plan`](.plan) and [`docs/tech-tree-prototypes.md`](docs/tech-tree-prototypes.md).
 
 **Play it:** https://jonomf.github.io/auto-rts-vibes/ (built and deployed by GitHub Actions on every push to `main`).
 
@@ -43,14 +45,29 @@ Programs are plain JSON (`src/automation/types.ts`). **Load starter** gives a co
 ## How it plays
 
 - **Per-building stockpiles.** There is no global bank. Every building holds its own minerals and gas, and trains only from them.
-- **Gathering.** In hands-on mode, right-click minerals or gas with gatherers. They deliver to the nearest Home. Right-click another building to feed that building's stockpile instead.
-- **Construction by delivery.** A gatherer places a blueprint (`B`). The blueprint is paid for by gatherers hauling resources to it, and it grows from 25% scale to full size as it fills. Nothing is deducted up front.
-- **Tech.** Home → Infantry Training (Light/Heavy Infantry) → Mech Factory (Tank, needs gas) → Port (Ship, flying).
+- **Gathering.** In hands-on mode, right-click minerals or a Refinery with SCVs. They deliver to the nearest Command Center. Right-click another building to feed that building's stockpile instead.
+- **Construction by delivery.** An SCV places a blueprint (`B`). The blueprint is paid for by resources hauled to it, and it grows from 25% scale to full size as it fills. Nothing is deducted up front.
+- **Tech tree (Terran).** Command Center (SCV) · Supply Depot (+8 supply) · Refinery (gas) · Barracks (Marine; Marauder and Medic with a Tech Lab) · Factory (Hellion; Siege Tank with a Tech Lab) · Starport (Viking, Medivac; Banshee with a Tech Lab). Production buildings build their own Tech Lab / Reactor from their stockpile.
+- **Combat.** Starcraft attributes (light, armored, bio, mech), armor, bonus damage, splash (Hellion, sieged tank, Baneling), Marauder slow, Stimpack, Medic/Medivac healing, siege mode (range 13, can't move).
+- **Rulesets.** *Classic*: hard supply cap, add-ons need free ground beside their building, siege and stim only when a rule says so. *Streamlined*: soft cap (over-cap units train 3× slower), add-ons have no footprint, tanks siege and bio stims by themselves.
+- **Scenarios.** Target range (inert), Outpost (bunkers, turret, sieged tank, bio), Swarm (Zerglings and Banelings), Armor line (sieged tanks, Marauders, bunkers), Air wing (Banshees, Vikings, turrets).
 - **Combat.** Right-click to attack. `A` + click does attack-move. Idle units engage enemies in range.
 - **Camera.** Trackpad: two-finger swipe pans, pinch zooms. Mouse: wheel zooms. Right- or middle-drag, `Alt`+drag and the arrow keys pan anywhere. If swipe detection guesses wrong, set it in the help sheet (`?`).
 - **Time.** `Space` pauses. `−` and `+` set 0.25×–4×. The sim runs on a fixed 20 Hz tick, independent of frame rate.
 
 Press `?` in game for all controls.
+
+## Strategy lab
+
+Every match is deterministic, so programs can be compared exactly. In the game: **Program → Test in lab**.
+From the command line (with [Bun](https://bun.sh)):
+
+```sh
+bun scripts/lab.ts            # every example program × scenario × ruleset
+bun scripts/experiments.ts    # the experiments behind docs/tech-tree-prototypes.md -> lab/results.json
+bun scripts/timing.ts         # attack-timing sweep -> lab/timing.json
+bun scripts/watch.ts mech armor classic   # timeline of one match
+```
 
 ## Layout
 

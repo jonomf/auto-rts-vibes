@@ -20,6 +20,17 @@
 	- [x] objective: destroy all targets, timed; best time; restart with current program
 	- [x] starter program (wins in ~2:00 with no input); JSON copy/paste; program saved in the browser
 	- [x] commands while paused: any order or program edit made while paused applies on resume
+- [x] Tech tree, phases 1 + 2 (Starcraft names)
+	- [x] combat attributes: armor, bonus damage, splash, slow; multi-hit weapons
+	- [x] supply (Command Center 15, Supply Depot 8), Refinery gates gas
+	- [x] add-ons: Tech Lab (unlocks Marauder, Medic, Siege Tank, Banshee), Reactor (two at once), built by the building from its own stock
+	- [x] units: Marine, Marauder, Medic, Hellion, Siege Tank (siege mode), Viking, Medivac, Banshee; stim, heal
+	- [x] rulesets: Classic vs Streamlined (supply hard/soft, add-ons attached/in-place, abilities manual/auto)
+	- [x] scenarios: target range, Outpost, Swarm (+Banelings), Armor line, Air wing; defenders fight back and hold their post
+	- [x] automation: supply / sieged / add-on conditions; siege, pack up, stim, build add-on actions; add-on build-order step; supply-buffer and add-on chips in the Build order view
+	- [x] strategy lab: in-game (Test in lab) and scripts; experiments in docs/tech-tree-prototypes.md
+	- [x] old saved programs migrate to the new names
+- [ ] Tech tree, phases 3 + 4: Engineering Bay / Armory research, Bunker + Missile Turret for the player, Ghost Academy, Fusion Core / Battlecruiser, Thor, Orbital / Planetary
 - [ ] M3
 	- [ ] CCG budget: cap program size ("mana" = blocks, already counted in the editor header)
 	- [ ] scripted enemy that runs the same program format (an opponent that builds and attacks)

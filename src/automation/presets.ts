@@ -119,7 +119,8 @@ export function bioProgram(): Program {
       { kind: 'addon', def: 'reactor', on: 'barracks' },
     ],
     {
-      base: [SUPPLY_RULE(), ATTACK_AT(22)],
+      // The lab's timing sweep: bio wins by massing (attacking at 4 army loses 150 units in a trickle).
+      base: [SUPPLY_RULE(), ATTACK_AT(30)],
       scv: scvRules(3),
       army: ARMY(),
       marine: STIM(),
@@ -149,7 +150,8 @@ export function mechProgram(): Program {
       { kind: 'addon', def: 'reactor', on: 'factory' },
     ],
     {
-      base: [SUPPLY_RULE(), ATTACK_AT(12)],
+      // ...while tanks out-range static defenses, so mech should push early.
+      base: [SUPPLY_RULE(), ATTACK_AT(8)],
       scv: scvRules(6),
       army: ARMY(),
       siegeTank: SIEGE(),
