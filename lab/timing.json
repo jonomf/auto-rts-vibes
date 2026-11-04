@@ -1,0 +1,258 @@
+[
+ {
+  "preset": "bio",
+  "scenario": "outpost",
+  "n": 4,
+  "clear": 346,
+  "lost": 150,
+  "left": 0
+ },
+ {
+  "preset": "bio",
+  "scenario": "outpost",
+  "n": 8,
+  "clear": 323,
+  "lost": 141,
+  "left": 0
+ },
+ {
+  "preset": "bio",
+  "scenario": "outpost",
+  "n": 12,
+  "clear": 318,
+  "lost": 138,
+  "left": 0
+ },
+ {
+  "preset": "bio",
+  "scenario": "outpost",
+  "n": 16,
+  "clear": 262,
+  "lost": 98,
+  "left": 0
+ },
+ {
+  "preset": "bio",
+  "scenario": "outpost",
+  "n": 20,
+  "clear": 231,
+  "lost": 73,
+  "left": 0
+ },
+ {
+  "preset": "bio",
+  "scenario": "outpost",
+  "n": 24,
+  "clear": 213,
+  "lost": 59,
+  "left": 0
+ },
+ {
+  "preset": "bio",
+  "scenario": "outpost",
+  "n": 30,
+  "clear": 168,
+  "lost": 25,
+  "left": 0
+ },
+ {
+  "preset": "bio",
+  "scenario": "outpost",
+  "n": 40,
+  "clear": 175,
+  "lost": 15,
+  "left": 0
+ },
+ {
+  "preset": "bio",
+  "scenario": "swarm",
+  "n": 4,
+  "clear": 185,
+  "lost": 40,
+  "left": 0
+ },
+ {
+  "preset": "bio",
+  "scenario": "swarm",
+  "n": 8,
+  "clear": 174,
+  "lost": 31,
+  "left": 0
+ },
+ {
+  "preset": "bio",
+  "scenario": "swarm",
+  "n": 12,
+  "clear": 169,
+  "lost": 28,
+  "left": 0
+ },
+ {
+  "preset": "bio",
+  "scenario": "swarm",
+  "n": 16,
+  "clear": 149,
+  "lost": 11,
+  "left": 0
+ },
+ {
+  "preset": "bio",
+  "scenario": "swarm",
+  "n": 20,
+  "clear": 147,
+  "lost": 4,
+  "left": 0
+ },
+ {
+  "preset": "bio",
+  "scenario": "swarm",
+  "n": 24,
+  "clear": 149,
+  "lost": 6,
+  "left": 0
+ },
+ {
+  "preset": "bio",
+  "scenario": "swarm",
+  "n": 30,
+  "clear": 156,
+  "lost": 2,
+  "left": 0
+ },
+ {
+  "preset": "bio",
+  "scenario": "swarm",
+  "n": 40,
+  "clear": 171,
+  "lost": 1,
+  "left": 0
+ },
+ {
+  "preset": "mech",
+  "scenario": "outpost",
+  "n": 4,
+  "clear": 194,
+  "lost": 13,
+  "left": 0
+ },
+ {
+  "preset": "mech",
+  "scenario": "outpost",
+  "n": 8,
+  "clear": 198,
+  "lost": 10,
+  "left": 0
+ },
+ {
+  "preset": "mech",
+  "scenario": "outpost",
+  "n": 12,
+  "clear": 205,
+  "lost": 11,
+  "left": 0
+ },
+ {
+  "preset": "mech",
+  "scenario": "outpost",
+  "n": 16,
+  "clear": 213,
+  "lost": 11,
+  "left": 0
+ },
+ {
+  "preset": "mech",
+  "scenario": "outpost",
+  "n": 20,
+  "clear": 225,
+  "lost": 13,
+  "left": 0
+ },
+ {
+  "preset": "mech",
+  "scenario": "outpost",
+  "n": 24,
+  "clear": 239,
+  "lost": 13,
+  "left": 0
+ },
+ {
+  "preset": "mech",
+  "scenario": "outpost",
+  "n": 30,
+  "clear": 256,
+  "lost": 8,
+  "left": 0
+ },
+ {
+  "preset": "mech",
+  "scenario": "outpost",
+  "n": 40,
+  "clear": 308,
+  "lost": 5,
+  "left": 0
+ },
+ {
+  "preset": "mech",
+  "scenario": "swarm",
+  "n": 4,
+  "clear": 195,
+  "lost": 13,
+  "left": 0
+ },
+ {
+  "preset": "mech",
+  "scenario": "swarm",
+  "n": 8,
+  "clear": 202,
+  "lost": 8,
+  "left": 0
+ },
+ {
+  "preset": "mech",
+  "scenario": "swarm",
+  "n": 12,
+  "clear": 199,
+  "lost": 2,
+  "left": 0
+ },
+ {
+  "preset": "mech",
+  "scenario": "swarm",
+  "n": 16,
+  "clear": 205,
+  "lost": 1,
+  "left": 0
+ },
+ {
+  "preset": "mech",
+  "scenario": "swarm",
+  "n": 20,
+  "clear": 217,
+  "lost": 0,
+  "left": 0
+ },
+ {
+  "preset": "mech",
+  "scenario": "swarm",
+  "n": 24,
+  "clear": 229,
+  "lost": 0,
+  "left": 0
+ },
+ {
+  "preset": "mech",
+  "scenario": "swarm",
+  "n": 30,
+  "clear": 251,
+  "lost": 0,
+  "left": 0
+ },
+ {
+  "preset": "mech",
+  "scenario": "swarm",
+  "n": 40,
+  "clear": 305,
+  "lost": 0,
+  "left": 0
+ }
+]
